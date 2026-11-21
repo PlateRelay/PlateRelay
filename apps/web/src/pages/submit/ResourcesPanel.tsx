@@ -1,8 +1,10 @@
-import { BED_TYPE_LABEL, type ResourcesView } from "@platerelay/shared";
+import { BED_TYPE_LABEL, type ResourcesView, WAIT_BUCKET_LABEL } from "@platerelay/shared";
 import { StatusChip } from "../../components/Chip";
 import { Icon } from "../../components/icons/Icon";
 import { Segmented } from "../../components/Segmented";
 import { cx } from "../../lib/cx";
+
+const LONG = new Set(["1h-2h", "2h-4h", "gt4h"]);
 
 export function Swatch({ color, name, stock }: { color: string; name: string | null; stock?: boolean }) {
   return (
@@ -76,6 +78,12 @@ export function ResourcesPanel({ view, fit, used, open, onOpen, tab, onTab }: { 
                   title={m.model}
                   sub={`${m.count} 台 · ${m.idle ? `${m.idle} 台空闲` : "全部在忙"}`}
                   hit={used.has(m.modelId)}
+                  right={m.wait && (
+                    <div className="col-start-2 text-body-s whitespace-nowrap text-on-variant sm:col-start-auto sm:text-right">
+                      <b className={cx("mr-1.5 font-num text-[16px] leading-6 font-medium sm:mr-0 sm:block", LONG.has(m.wait) ? "text-warn" : "text-on-surface")}>{WAIT_BUCKET_LABEL[m.wait]}</b>
+                      预计等待
+                    </div>
+                  )}
                 >
                   <div className="flex flex-wrap gap-1.5">
                     {!!m.nozzles.length && <StatusChip className="bg-sc text-on-surface">{m.nozzles.join(" / ")} mm {m.dual ? "双" : "单"}喷嘴</StatusChip>}
