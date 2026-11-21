@@ -102,7 +102,7 @@
 | E-IDEM | `idempotency_keys` | 幂等记录 |
 | E-ARC | `archives` | 归档本期的记录 |
 | E-ANN | `announcements` | 公告（文档 1 §5.15） |
-| E-ANND | `announcement_dismissals` | 谁关掉了哪条公告 |
+| E-ANND | `announcement_dismissals` | 谁关掉、看过哪条公告 |
 
 不建表的东西：
 
@@ -508,7 +508,7 @@
 
 ### E-ANND `announcement_dismissals`
 
-`user_id`、`announcement_id`、`at`，主键 `(user_id, announcement_id)`。修改公告正文不算新公告，关掉过的人不再看到；要让所有人重新看到就发布一条新的（R-ANN-04）。
+`user_id`、`announcement_id`、`dismissed_at?`、`read_at?`，主键 `(user_id, announcement_id)`。关掉横幅写 `dismissed_at`，点开看完整内容写 `read_at`，两个互不影响；谁先发生就先建这一行。修改公告正文不算新公告，关掉或看过的人不再重新出现横幅和红点；要让所有人重新看到就发布一条新的（R-ANN-04、R-ANN-05）。
 
 ### E-AUD `audit_log`
 
