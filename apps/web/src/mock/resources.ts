@@ -8,9 +8,9 @@ export const reported: ResourcesView = {
   colourMissing: "warn",
   bedMissing: "warn",
   models: [
-    { modelId: "N6", model: "X2D", count: 2, idle: 1, nozzles: [0.4], dual: true, bedTypes: ["Textured PEI Plate"], wait: "30m-1h", waitManual: false, note: "", hidden: false },
-    { modelId: "O1D", model: "H2D", count: 1, idle: 0, nozzles: [0.4], dual: true, bedTypes: ["Textured PEI Plate"], wait: "1h-2h", waitManual: false, note: "", hidden: false },
-    { modelId: "C12", model: "P1S", count: 4, idle: 2, nozzles: [0.4], dual: false, bedTypes: ["Cool Plate", "Textured PEI Plate"], wait: "lt30m", waitManual: false, note: "", hidden: false },
+    { modelId: "N6", model: "X2D", count: 2, idle: 1, nozzles: [0.4], dual: true, bedTypes: ["Textured PEI Plate"], wait: "30m-1h", note: "", hidden: false },
+    { modelId: "O1D", model: "H2D", count: 1, idle: 0, nozzles: [0.4], dual: true, bedTypes: ["Textured PEI Plate"], wait: "1h-2h", note: "", hidden: false },
+    { modelId: "C12", model: "P1S", count: 4, idle: 2, nozzles: [0.4], dual: false, bedTypes: ["Cool Plate", "Textured PEI Plate"], wait: "lt30m", note: "", hidden: false },
   ],
   materials: [
     { type: "PLA", note: "", hidden: false, colors: [["#f4f4f4", "白"], ["#1d1d1f", "黑"], ["#8e8e93", "灰"], ["#e5383b", "红"], ["#ffcc00", "黄"], ["#0088ff", "蓝"]].map(([color]) => ({ color, name: null, stock: false, modelIds: ["N6", "O1D", "C12"] })) },

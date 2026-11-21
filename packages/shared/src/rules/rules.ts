@@ -148,10 +148,10 @@ export interface ResourceSettings {
   /** 顶部说明. */
   bulletin: string;
   /**
-   * Per printer model id: hidden, note, manual wait range, sort order, and the bed types (slicer names,
+   * Per printer model id: hidden, note, sort order, and the bed types (slicer names,
    * e.g. "Textured PEI Plate") this event has for it (打印板目录, E-BED; unset = what the printers report).
    */
-  models: Record<string, { hidden?: boolean; note?: string; wait?: WaitBucket | null; order?: number; bedTypes?: string[] }>;
+  models: Record<string, { hidden?: boolean; note?: string; order?: number; bedTypes?: string[] }>;
   /** Per material type: hidden, note, sort order. */
   materials: Record<string, { hidden?: boolean; note?: string; order?: number }>;
   /** 库存耗材: on hand but not loaded; the plate is printed after a spool change. */
@@ -187,7 +187,6 @@ export interface ResourcesView {
     bedTypes: string[];
     /** null when hidden from this viewer. */
     wait: WaitBucket | null;
-    waitManual: boolean;
     note: string;
     hidden: boolean;
   }[];

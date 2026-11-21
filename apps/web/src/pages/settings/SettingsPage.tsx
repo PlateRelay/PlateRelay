@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { AUDIT_ACTOR_TYPES, AUDIT_RESULTS, type AuditListQuery, type AuditLogView, BED_TYPES, BED_TYPE_LABEL, MAX_UPLOAD_BYTES, type QueueRules, type ResourceSettings, type ResourcesView, WAIT_BUCKETS, WAIT_BUCKET_LABEL, type WaitBucket } from "@platerelay/shared";
+import { AUDIT_ACTOR_TYPES, AUDIT_RESULTS, type AuditListQuery, type AuditLogView, BED_TYPES, BED_TYPE_LABEL, MAX_UPLOAD_BYTES, type QueueRules, type ResourceSettings, type ResourcesView } from "@platerelay/shared";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { Avatar } from "../../components/Avatar";
 import { Button, IconButton } from "../../components/Button";
@@ -345,7 +345,6 @@ function PolicyForm({ rules }: { rules: QueueRules }) {
 
 /* ---------- 可用资源 ---------- */
 
-const WAIT_OPTIONS: [WaitBucket | "", string][] = [["", "自动"], ...WAIT_BUCKETS.map((w): [WaitBucket, string] => [w, WAIT_BUCKET_LABEL[w]])];
 const MATERIAL_TYPES = ["PLA", "PETG", "TPU", "ABS", "ASA", "PLA-CF", "PETG-CF", "PA", "PC"];
 
 /** "2 台 · 0.4 mm 双喷嘴 · 纹理 PEI 板" */
@@ -361,7 +360,7 @@ export function ColourDot({ color, name, stock }: { color: string; name: string 
   );
 }
 
-type ResSheet = { kind: "model"; id: string; note: string; wait: WaitBucket | ""; beds: string[] } | { kind: "material"; id: string; note: string } | { kind: "stock"; type: string; color: string; name: string; on: string[] };
+type ResSheet = { kind: "model"; id: string; note: string; beds: string[] } | { kind: "material"; id: string; note: string } | { kind: "stock"; type: string; color: string; name: string; on: string[] };
 
 function ResourcesTab() {
   const toast = useToast();
@@ -446,8 +445,8 @@ function ResourcesTab() {
       <Section title="机型">
         <div>
           {v.models.length ? v.models.map((m) =>
-            row(m.modelId, m.model, modelSummary(m), m.hidden, <>{!!m.bedTypes.length && note(m.bedTypes.map((b) => BED_TYPE_LABEL[b] ?? b).join(" · "), "打印板")}{note(m.note)}{m.waitManual && m.wait && note(`${WAIT_BUCKET_LABEL[m.wait]}（手动）`, "预计等待")}</>,
-              () => setSheet({ kind: "model", id: m.modelId, note: s.models[m.modelId]?.note ?? "", wait: s.models[m.modelId]?.wait ?? "", beds: [...m.bedTypes] }),
+            row(m.modelId, m.model, modelSummary(m), m.hidden, <>{!!m.bedTypes.length && note(m.bedTypes.map((b) => BED_TYPE_LABEL[b] ?? b).join(" · "), "打印板")}{note(m.note)}</>,
+              () => setSheet({ kind: "model", id: m.modelId, note: s.models[m.modelId]?.note ?? "", beds: [...m.bedTypes] }),
               (x) => save(setModel(m.modelId, { hidden: !x }), `${m.model} 已${x ? "显示" : "隐藏"}`)),
           ) : <Empty icon="print_disabled" title="没有开放给选手的打印机" />}
         </div>
@@ -481,7 +480,7 @@ function ResourcesTab() {
               onClick={async () => {
                 if (!sheet) return;
                 const next =
-                  sheet.kind === "model" ? setModel(sheet.id, { note: sheet.note.trim(), wait: sheet.wait || null, bedTypes: BED_TYPES.filter((b) => sheet.beds.includes(b)) })
+                  sheet.kind === "model" ? setModel(sheet.id, { note: sheet.note.trim(), bedTypes: BED_TYPES.filter((b) => sheet.beds.includes(b)) })
                   : sheet.kind === "material" ? setMaterial(sheet.id, { note: sheet.note.trim() })
                   : { ...s, stock: [...s.stock, { id: `s${Date.now().toString(36)}`, type: sheet.type, color: sheet.color, name: sheet.name.trim(), modelIds: sheet.on }] };
                 if (await save(next, sheet.kind === "stock" ? "已添加库存耗材" : "已保存")) setSheet(null);
@@ -497,15 +496,6 @@ function ResourcesTab() {
             <Field label="备注" counter={`${sheet.note.length}/40`}>
               {(id, cls) => <TextInput id={id} className={cls} maxLength={40} placeholder="例如 只有 0.4 mm 喷嘴" value={sheet.note} onChange={(e) => setSheet({ ...sheet, note: e.target.value })} />}
             </Field>
-            {sheet.kind === "model" && (
-              <Field label="预计等待">
-                {(id, cls) => (
-                  <select id={id} className={cls} value={sheet.wait} onChange={(e) => setSheet({ ...sheet, wait: e.target.value as WaitBucket | "" })}>
-                    {WAIT_OPTIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-                  </select>
-                )}
-              </Field>
-            )}
             {sheet.kind === "model" && (
               <div className="flex flex-col gap-1.5">
                 <span className="text-note font-medium tracking-[0.1px] text-on-variant">打印板</span>
