@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Button, IconButton } from "../../components/Button";
@@ -228,6 +228,41 @@ function Step({ n, title, right, done, children }: { n: number; title: string; r
   );
 }
 
+/* Success screen: the mark pops in and draws its tick, then the copy, the order rows and the actions follow in turn.
+   With reduced motion, MotionConfig drops the scale and offset, so everything just fades. */
+const okCard: Variants = {
+  hidden: { opacity: 0 },
+  shown: { opacity: 1, transition: { ...t("short4", "standard"), delayChildren: 0.05, staggerChildren: 0.06 } },
+};
+const rise: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  shown: { opacity: 1, y: 0, transition: t("medium2", "emphasizedDecelerate") },
+};
+const stagger: Variants = { hidden: {}, shown: { transition: { staggerChildren: 0.04 } } };
+
+function SuccessMark() {
+  const reduce = useReducedMotion();
+  return (
+    <motion.svg
+      viewBox="0 0 56 56"
+      aria-hidden
+      className="size-14 text-ok"
+      variants={{ hidden: { opacity: 0, scale: 0.6 }, shown: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 420, damping: 22 } } }}
+    >
+      <circle cx="28" cy="28" r="23.3" fill="currentColor" />
+      <motion.path
+        d="M17.5 29.2l7 7 14-14"
+        fill="none"
+        stroke="var(--color-sc)"
+        strokeWidth="4.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        variants={{ hidden: { pathLength: reduce ? 1 : 0 }, shown: { pathLength: 1, transition: { ...t("medium2", "emphasizedDecelerate"), delay: reduce ? 0 : 0.15 } } }}
+      />
+    </motion.svg>
+  );
+}
+
 export function SubmitPage() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -415,31 +450,34 @@ export function SubmitPage() {
         {done ? (
           <motion.section
             key="ok"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1, transition: t("medium4", "emphasizedDecelerate") }}
+            initial="hidden"
+            animate="shown"
+            variants={okCard}
             className="flex flex-col items-center gap-3 rounded-xl bg-sc px-6 py-7 text-center"
           >
-            <Icon name="check_circle" size={56} className="text-ok" />
-            <h2 className="m-0 text-headline-s font-normal">已提交 {done.length} 张订单</h2>
-            <p className="m-0 max-w-[460px] text-body-m text-on-variant">订单已进入「待审核」。通过后会自动排队，你可以在「我的订单」里查看进度；在开始打印前可以随时取消。</p>
-            <ul className="m-0 mt-2 flex w-full max-w-[520px] list-none flex-col gap-2 p-0 text-left">
+            <SuccessMark />
+            <motion.h2 variants={rise} className="m-0 text-headline-s font-normal">已提交 {done.length} 张订单</motion.h2>
+            <motion.p variants={rise} className="m-0 max-w-[460px] text-body-m text-on-variant">
+              订单已进入「待审核」。管理员审核通过后进入「排队中」，由现场人员派到打印机；没通过会被驳回，可在「我的订单」查看原因。派单前都可以在「我的订单」里取消。
+            </motion.p>
+            <motion.ul variants={stagger} className="m-0 mt-2 flex w-full max-w-[520px] list-none flex-col gap-2 p-0 text-left">
               {done.map((x) => (
-                <li key={x.id} className="flex items-center gap-3 rounded-xl bg-sc-high px-3.5 py-2.5 text-body-m">
+                <motion.li key={x.id} variants={rise} className="flex items-center gap-3 rounded-xl bg-sc-high px-3.5 py-2.5 text-body-m">
                   <Icon name="description" />
                   <b className="font-num text-label-l font-medium">{x.id}</b>
                   <span>
                     第 {x.n} 盘 · {x.model} · {x.time}
                   </span>
                   <StatusChip className="ml-auto">待审核</StatusChip>
-                </li>
+                </motion.li>
               ))}
-            </ul>
-            <div className="mt-2 flex flex-wrap justify-center gap-2">
+            </motion.ul>
+            <motion.div variants={rise} className="mt-2 flex flex-wrap justify-center gap-2">
               <Button onClick={reset}>继续提交</Button>
               <Button variant="tonal" onClick={() => navigate("/orders")}>
                 查看我的订单
               </Button>
-            </div>
+            </motion.div>
           </motion.section>
         ) : (
           <motion.div key="form" exit={{ opacity: 0, transition: t("short3", "emphasizedAccelerate") }} className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -677,7 +715,7 @@ export function SubmitPage() {
               <Button icon="send" disabled={!canSubmit || sending} onClick={() => void submit()} className="w-full max-sm:w-auto">
                 提交审核
               </Button>
-              <div className="text-body-s text-on-variant max-sm:hidden">提交后进入「待审核」，Builder 审核通过才会排队。待审核期间可以自行取消。</div>
+              <div className="text-body-s text-on-variant max-sm:hidden">提交后进入「待审核」，管理员审核通过后才会排队。派单前都可以自行取消。</div>
             </aside>
           </motion.div>
         )}
