@@ -5,6 +5,7 @@ import { cx } from "../lib/cx";
 import { canOpen, useMe } from "../lib/session";
 import { duration, easing } from "../lib/motion";
 import { useCounts } from "../lib/ordersApi";
+import { Badge } from "./Badge";
 import { Empty } from "./OrderBits";
 import { Page, PageHeader } from "./Page";
 import { FigmaIcon } from "./icons/FigmaIcon";
@@ -77,7 +78,7 @@ function Drawer({ modal, onNavigate }: { modal?: boolean; onNavigate?: () => voi
               <Icon name={it.icon} fill={isActive(it.to, pathname)} />
               <span>{it.label}</span>
             </span>
-            {it.badge != null && <span className="relative ml-auto text-label-l font-medium">{it.badge}</span>}
+            {it.badge != null && <Badge count={it.badge} className="relative ml-auto" />}
           </NavLink>
         ),
       )}

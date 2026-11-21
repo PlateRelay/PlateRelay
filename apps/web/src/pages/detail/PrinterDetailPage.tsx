@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { Avatar } from "../../components/Avatar";
+import { Badge } from "../../components/Badge";
 import { Button, IconButton } from "../../components/Button";
 import { FigmaIcon } from "../../components/icons/FigmaIcon";
 import { Icon } from "../../components/icons/Icon";
@@ -259,7 +260,7 @@ export function PrinterDetailPage() {
               className={cx("state-layer relative inline-flex h-12 items-center gap-1.5 border-0 bg-transparent px-4 text-label-l font-medium", tab === k ? "text-primary" : "text-on-variant")}
             >
               {l}
-              {k === "log" && d.log.length > 0 && <span className="h-4 min-w-4 rounded-lg bg-error px-1 text-center text-label-s text-on-error">{d.log.length}</span>}
+              {k === "log" && d.log.length > 0 && <Badge count={d.log.length} />}
               {tab === k && (
                 <motion.span
                   layoutId="detail-tab"
