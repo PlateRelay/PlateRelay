@@ -17,12 +17,28 @@ export const typeOf = (label: string): FormFieldType => TYPE_OF[label] ?? "text"
 export const ROLE_ID: Record<string, string> = { User: "user", Staff: "staff", Builder: "builder", Coreteam: "coreteam" };
 
 /** Row shape of the form tab; `key` is the server's field id (the mock uses numbers). */
-export type FieldRow = MockField & { key: string; options?: string[] };
+export type FieldRow = MockField & { key: string };
 export type UserRow = { id: string; n: string; role: string; username?: string };
 export type DaemonRow = Daemon & { key: string };
 
-const toField = (f: FormField, i: number): FieldRow => ({ id: i, key: f.id, name: f.label, type: FIELD_TYPE_LABEL[f.type], req: f.required, options: f.options });
-const fromField = (f: FieldRow): FormField => ({ id: f.key, label: f.name, type: typeOf(f.type), required: f.req, ...(f.options?.length ? { options: f.options } : {}) });
+const toField = (f: FormField, i: number): FieldRow => ({
+  id: i, key: f.id, name: f.label, type: FIELD_TYPE_LABEL[f.type], req: f.required, options: f.options,
+  desc: f.description, ph: f.placeholder, minLen: f.minLength, maxLen: f.maxLength, min: f.min, max: f.max,
+});
+/** The field as the panel stores it; settings that do not apply to its type are dropped. */
+export const fromFieldRow = (f: FieldRow): FormField => {
+  const type = typeOf(f.type);
+  const text = type === "text" || type === "textarea";
+  const pick = <K extends string, V>(k: K, v: V | undefined, on = true) => (on && v !== undefined && v !== "" ? { [k]: v } : {}) as Partial<Record<K, V>>;
+  return {
+    id: f.key, label: f.name, type, required: f.req,
+    ...pick("options", f.options?.length ? f.options : undefined, type === "single" || type === "multi"),
+    ...pick("description", f.desc?.trim()),
+    ...pick("placeholder", f.ph?.trim(), type !== "multi"),
+    ...pick("minLength", f.minLen, text), ...pick("maxLength", f.maxLen, text),
+    ...pick("min", f.min, type === "number"), ...pick("max", f.max, type === "number"),
+  };
+};
 
 /* A daemon counts as online when it reported in the last two minutes; nothing reports until the daemon link exists. */
 const ONLINE_MS = 2 * 60e3;
@@ -83,8 +99,8 @@ export const newFieldKey = () => "f" + Date.now().toString(36) + Math.floor(Math
 export const settingsApi = {
   /** The form is saved whole; every save is a new version on the server. */
   async saveFields(next: FieldRow[]): Promise<Done> {
-    if (!LIVE) return settings.set((s) => ({ ...s, fields: next.map(({ key: _k, options: _o, ...f }) => f) })), ok;
-    return reload(await api<null>("/api/form", { method: "PUT", json: { fields: next.map(fromField) } }), "form");
+    if (!LIVE) return settings.set((s) => ({ ...s, fields: next.map(({ key: _k, ...f }) => f) })), ok;
+    return reload(await api<null>("/api/form", { method: "PUT", json: { fields: next.map(fromFieldRow) } }), "form");
   },
 
   async setRole(u: UserRow, role: string): Promise<Done> {

@@ -2,16 +2,22 @@ import { type AuditLogView, DEFAULT_QUEUE_RULES, type QueueRules } from "@plater
 import { createStore } from "../lib/store";
 
 export const ROLES = ["User", "Staff", "Builder", "Coreteam"] as const;
-export const FIELD_TYPES = ["单行文本", "多行文本", "单选", "多选"];
-
-export type FormField = { id: number; name: string; type: string; req: boolean };
+/** A form field as the settings page edits it; `type` is the label shown (单行文本 …). */
+export type FormField = {
+  id: number; name: string; type: string; req: boolean;
+  options?: string[]; desc?: string; ph?: string; minLen?: number; maxLen?: number; min?: number; max?: number;
+};
 export type Daemon = { id: number; name: string; net: string; seen: string; on: boolean; tail: string };
 
 export const settings = createStore({
   fields: [
-    { id: 1, name: "打印用途", type: "多行文本", req: true },
-    { id: 2, name: "所属队伍", type: "单选", req: true },
-    { id: 3, name: "备注", type: "单行文本", req: false },
+    { id: 1, name: "用途", type: "单选", req: true, options: ["比赛零件", "调试测试", "备件替换", "其他"] },
+    { id: 2, name: "队伍 / 编号", type: "单行文本", req: true, ph: "例如 T-014", maxLen: 20 },
+    {
+      id: 3, name: "打印理由", type: "多行文本", req: true, minLen: 10, maxLen: 500, ph: "说明这个零件的用途和为什么需要打印",
+      desc: "审核人会根据这里判断优先级。请写清楚：\n- 零件**用在哪里**\n- 为什么现在需要打印\n\n*至少 10 个字。*",
+    },
+    { id: 4, name: "备注", type: "多行文本", req: false, ph: "选填：给审核人的补充说明", maxLen: 200 },
   ] as FormField[],
   users: [
     { n: "Tom_Chicken", role: "Builder" }, { n: "赵乐", role: "Builder" }, { n: "陈一帆", role: "Staff" },

@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { AUDIT_ACTOR_TYPES, AUDIT_RESULTS, type AuditListQuery, type AuditLogView, BED_TYPES, BED_TYPE_LABEL, MAX_UPLOAD_BYTES, type QueueRules, type ResourceSettings, type ResourcesView } from "@platerelay/shared";
+import { AUDIT_ACTOR_TYPES, AUDIT_RESULTS, type AuditListQuery, type AuditLogView, BED_TYPES, BED_TYPE_LABEL, type FormFieldType, MAX_UPLOAD_BYTES, type QueueRules, type ResourceSettings, type ResourcesView } from "@platerelay/shared";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { Avatar } from "../../components/Avatar";
 import { Button, IconButton } from "../../components/Button";
@@ -18,11 +18,9 @@ import { saveResourceSettings, useResourceSettings, useResources } from "../../l
 import { saveRules, useRules } from "../../lib/rulesApi";
 import { canOpen, useMe } from "../../lib/session";
 import { cx } from "../../lib/cx";
-import { FIELD_TYPE_LABEL, type DaemonRow, type FieldRow, newFieldKey, settingsApi, useDaemons, useFields, useRegistration, useUsers } from "../../lib/settingsApi";
-import { FIELD_TYPES as MOCK_FIELD_TYPES, ROLES, genToken, settings } from "../../mock/settings";
-
-const FIELD_TYPES = LIVE ? Object.values(FIELD_TYPE_LABEL) : MOCK_FIELD_TYPES;
-const CHOICE = ["单选", "多选"];
+import { FIELD_TYPE_LABEL, type DaemonRow, type FieldRow, fromFieldRow, newFieldKey, settingsApi, typeOf, useDaemons, useFields, useRegistration, useUsers } from "../../lib/settingsApi";
+import { ROLES, genToken, settings } from "../../mock/settings";
+import { type Answer, FormFieldInput, answerError, isWide, rangeText } from "../../components/FormFields";
 /** Prototype-only tabs say so in real builds, where their saves would otherwise look real. */
 const NO_BACKEND = "这一页还没有后端，保存只在当前页面生效，不会写入面板。";
 
@@ -72,88 +70,286 @@ const Actions = ({ children }: { children: ReactNode }) => <div className="flex 
 
 /* ---------- 申请表单 ---------- */
 
+const FIELD_ICON: Record<FormFieldType, string> = { text: "short_text", textarea: "notes", single: "radio_button_checked", multi: "check_box", number: "pin" };
+
+/** What a field row says under its name: type, options or limits, and whether it has a description. */
+function fieldSummary(f: FieldRow) {
+  const t = typeOf(f.type);
+  const len = f.minLen !== undefined && f.maxLen !== undefined ? `${f.minLen}–${f.maxLen} 字` : f.minLen !== undefined ? `至少 ${f.minLen} 字` : f.maxLen !== undefined ? `最多 ${f.maxLen} 字` : "";
+  return [
+    f.type,
+    (t === "single" || t === "multi") && f.options?.length ? `${f.options.length} 个选项：${f.options.join(" / ")}` : "",
+    t === "text" || t === "textarea" ? len : "",
+    t === "number" ? rangeText(f) : "",
+    f.desc?.trim() ? "有说明" : "",
+  ].filter(Boolean).join(" · ");
+}
+
+/** The editor works on strings so half-typed numbers stay as typed. */
+type FieldDraft = { key: string | null; name: string; type: FormFieldType; req: boolean; options: string; desc: string; ph: string; minLen: string; maxLen: string; min: string; max: string };
+const FORM_FIELD_TYPES = Object.keys(FIELD_TYPE_LABEL) as FormFieldType[];
+const str = (n: number | undefined) => (n === undefined ? "" : String(n));
+const draftOfField = (f: FieldRow | null): FieldDraft =>
+  f ? { key: f.key, name: f.name, type: typeOf(f.type), req: f.req, options: (f.options ?? []).join("\n"), desc: f.desc ?? "", ph: f.ph ?? "", minLen: str(f.minLen), maxLen: str(f.maxLen), min: str(f.min), max: str(f.max) }
+    : { key: null, name: "", type: "text", req: false, options: "", desc: "", ph: "", minLen: "", maxLen: "", min: "", max: "" };
+const numOrNone = (v: string) => (v.trim() === "" ? undefined : Number(v));
+
+function rowOfDraft(d: FieldDraft, prev: FieldRow | undefined): FieldRow {
+  const options = [...new Set(d.options.split(/[\n,，、]/).map((x) => x.trim()).filter(Boolean))];
+  return {
+    id: prev?.id ?? Date.now(), key: d.key ?? newFieldKey(), name: d.name.trim(), type: FIELD_TYPE_LABEL[d.type], req: d.req,
+    options: options.length ? options : undefined, desc: d.desc.trim() || undefined, ph: d.ph.trim() || undefined,
+    minLen: numOrNone(d.minLen), maxLen: numOrNone(d.maxLen), min: numOrNone(d.min), max: numOrNone(d.max),
+  };
+}
+
+/** Why the draft cannot be saved yet, per input. */
+function draftErrors(d: FieldDraft) {
+  const e: Partial<Record<keyof FieldDraft, string>> = {};
+  const text = d.type === "text" || d.type === "textarea";
+  if (!d.name.trim()) e.name = "请填写字段名称";
+  if ((d.type === "single" || d.type === "multi") && !d.options.trim()) e.options = "至少要有一个选项";
+  if (text) {
+    for (const k of ["minLen", "maxLen"] as const) if (d[k] && (!/^\d+$/.test(d[k]) || +d[k] > 10000 || (k === "maxLen" && +d[k] < 1))) e[k] = k === "maxLen" ? "1 到 10000 的整数" : "0 到 10000 的整数";
+    if (!e.minLen && !e.maxLen && d.minLen && d.maxLen && +d.minLen > +d.maxLen) e.maxLen = "不能少于最少字数";
+  }
+  if (d.type === "number") {
+    for (const k of ["min", "max"] as const) if (d[k] && !Number.isFinite(Number(d[k]))) e[k] = "要填数字";
+    if (!e.min && !e.max && d.min && d.max && +d.min > +d.max) e.max = "不能小于最小值";
+  }
+  if (d.desc.length > 2000) e.desc = "最多 2000 个字";
+  if (d.ph.length > 100) e.ph = "最多 100 个字";
+  return e;
+}
+
+function FieldEditor({ open, field, onClose, onSave, onDelete }: {
+  open: boolean;
+  field: FieldRow | null;
+  onClose: () => void;
+  onSave: (row: FieldRow) => Promise<boolean>;
+  onDelete: () => void;
+}) {
+  const [d, setD] = useState(() => draftOfField(field));
+  const [answer, setAnswer] = useState<Answer | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const errors = draftErrors(d);
+  const set = <K extends keyof FieldDraft>(k: K, v: FieldDraft[K]) => setD({ ...d, [k]: v });
+  const text = d.type === "text" || d.type === "textarea";
+  const preview = fromFieldRow(rowOfDraft(d, field ?? undefined));
+  const limit = (k: "minLen" | "maxLen" | "min" | "max", label: string, unit?: string) => (
+    <Field label={label} error={errors[k]}>
+      {(id, cls) => (
+        <div className="relative">
+          <TextInput id={id} className={cx(cls, unit && "pr-10")} inputMode={unit ? "numeric" : "decimal"} placeholder="不限" value={d[k]} onChange={(e) => set(k, e.target.value.replace(unit ? /\D/g : /[^\d.-]/g, ""))} />
+          {unit && <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-label-l text-on-variant">{unit}</span>}
+        </div>
+      )}
+    </Field>
+  );
+
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      wide
+      title={field ? `编辑 ${field.name}` : "添加字段"}
+      footer={
+        <>
+          {field && (
+            <Button variant="text" icon="delete" className="mr-auto text-error!" onClick={() => (confirmDelete ? onDelete() : setConfirmDelete(true))}>
+              {confirmDelete ? "再点一次删除" : "删除字段"}
+            </Button>
+          )}
+          <Button variant="text" onClick={onClose}>取消</Button>
+          <Button
+            disabled={busy || Object.keys(errors).length > 0}
+            onClick={async () => {
+              setBusy(true);
+              const ok = await onSave(rowOfDraft(d, field ?? undefined));
+              setBusy(false);
+              if (ok) onClose();
+            }}
+          >
+            {field ? "保存" : "添加"}
+          </Button>
+        </>
+      }
+    >
+      <Field label="字段名称" required error={field ? errors.name : undefined}>
+        {(id, cls) => <TextInput id={id} className={cls} maxLength={40} placeholder="例如 指导老师" value={d.name} onChange={(e) => set("name", e.target.value)} />}
+      </Field>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-note font-medium tracking-[0.1px] text-on-variant">类型</span>
+        <div className="flex flex-wrap gap-2">
+          {FORM_FIELD_TYPES.map((t) => (
+            <SelectChip key={t} selected={d.type === t} onClick={() => { set("type", t); setAnswer(undefined); }}>
+              {d.type !== t && <Icon name={FIELD_ICON[t]} size={18} className="-ml-1" />}
+              {FIELD_TYPE_LABEL[t]}
+            </SelectChip>
+          ))}
+        </div>
+      </div>
+      {(d.type === "single" || d.type === "multi") && (
+        <Field label="选项" required error={d.options ? undefined : errors.options} hint="每行一个">
+          {(id, cls) => <TextArea id={id} className={cls} placeholder={"比赛零件\n调试测试\n其他"} value={d.options} onChange={(e) => set("options", e.target.value)} />}
+        </Field>
+      )}
+      <Field label="说明（选填）" error={errors.desc} hint="显示在字段名称下方。支持 Markdown：**粗体**、[链接](https://…)、- 列表" counter={`${d.desc.length}/2000`}>
+        {(id, cls) => <TextArea id={id} className={cls} rows={4} placeholder="告诉选手这里该填什么" value={d.desc} onChange={(e) => set("desc", e.target.value)} />}
+      </Field>
+      {d.type !== "multi" && (
+        <Field label="占位文字（选填）" error={errors.ph}>
+          {(id, cls) => <TextInput id={id} className={cls} maxLength={100} placeholder={d.type === "single" ? "请选择" : "输入框为空时显示的灰字"} value={d.ph} onChange={(e) => set("ph", e.target.value)} />}
+        </Field>
+      )}
+      {text && <div className="grid grid-cols-2 gap-4">{limit("minLen", "最少字数", "字")}{limit("maxLen", "最多字数", "字")}</div>}
+      {d.type === "number" && <div className="grid grid-cols-2 gap-4">{limit("min", "最小值")}{limit("max", "最大值")}</div>}
+      <div className="flex items-center justify-between gap-3 rounded-xl bg-sc px-4 py-3">
+        <RowText title="必填" sub="不填就不能提交" />
+        <Switch checked={d.req} label="必填" onChange={(v) => set("req", v)} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="text-note font-medium tracking-[0.1px] text-on-variant">预览</span>
+        <div className="rounded-xl bg-surface p-4 shadow-[inset_0_0_0_1px_var(--md-outline-variant)]">
+          <FormFieldInput field={preview} value={answer} error={answer === undefined ? "" : answerError(preview, answer)} onChange={setAnswer} />
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
 function FormTab() {
   const toast = useToast();
   const { rows: fields, error } = useFields();
-  const [open, setOpen] = useState(false);
-  const [key, setKey] = useState(0);
-  const [name, setName] = useState("");
-  const [type, setType] = useState(FIELD_TYPES[0]);
-  const [opts, setOpts] = useState("");
-  const options = opts.split(/[,，、\n]/).map((x) => x.trim()).filter(Boolean);
+  const [editing, setEditing] = useState<{ n: number; field: FieldRow | null } | null>(null);
+  /* Reordering follows the pointer (mouse and touch alike); the rows in between slide aside to show where it will land. */
+  const list = useRef<HTMLOListElement>(null);
+  const grab = useRef<{ y: number; mids: number[] } | null>(null);
+  const [drag, setDrag] = useState<{ from: number; over: number; dy: number; step: number } | null>(null);
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const preview = fields.map(fromFieldRow);
   const save = async (next: FieldRow[], msg: string) => {
     const r = await settingsApi.saveFields(next);
+    if (r.ok && !LIVE) log("修改申请表单", msg);
     toast(r.ok ? msg : r.error.message || "保存失败，请重试");
     return r.ok;
   };
+  const move = (from: number, to: number) => {
+    if (from === to || to < 0 || to >= fields.length) return;
+    const next = [...fields];
+    next.splice(to, 0, ...next.splice(from, 1));
+    void save(next, `已把 ${fields[from].name} 移到第 ${to + 1} 位`);
+  };
+  const open = (field: FieldRow | null) => setEditing((e) => ({ n: (e?.n ?? 0) + 1, field }));
+
   return (
-    <Section title="申请表单" hint="选手提交订单时要填的信息。审核页会显示这些答案。">
-      {error && <div className="text-body-m text-error">加载失败：{error}</div>}
-      <div>
-        {fields.map((f) => (
-          <Row key={f.key}>
-            <RowText title={f.name} sub={f.options?.length ? `${f.type} · ${f.options.join(" / ")}` : f.type} />
-            <div className="flex items-center gap-2">
-              <Tag>{f.req ? "必填" : "选填"}</Tag>
-              <Switch checked={f.req} label={`${f.name} 必填`} onChange={(v) => void save(fields.map((x) => (x.key === f.key ? { ...x, req: v } : x)), v ? `${f.name} 改为必填` : `${f.name} 改为选填`)} />
-              <IconButton
-                icon="delete"
-                label={`删除 ${f.name}`}
-                size={40}
-                onClick={() => void save(fields.filter((x) => x.key !== f.key), "已删除字段")}
-              />
-            </div>
-          </Row>
-        ))}
-      </div>
-      <Actions>
-        <Button
-          variant="outlined"
-          icon="add"
-          onClick={() => {
-            setName("");
-            setType(FIELD_TYPES[0]);
-            setOpts("");
-            setKey((k) => k + 1);
-            setOpen(true);
-          }}
-        >
-          添加字段
-        </Button>
-      </Actions>
-      <Sheet
-        key={key}
-        open={open}
-        onClose={() => setOpen(false)}
-        title="添加字段"
-        footer={
-          <>
-            <Button variant="text" onClick={() => setOpen(false)}>取消</Button>
-            <Button
-              disabled={!name.trim() || (LIVE && CHOICE.includes(type) && !options.length)}
-              onClick={async () => {
-                const row: FieldRow = { id: Date.now(), key: newFieldKey(), name: name.trim(), type, req: false, options: CHOICE.includes(type) ? options : undefined };
-                if (await save([...fields, row], "已添加字段")) setOpen(false);
-              }}
-            >
-              添加
-            </Button>
-          </>
-        }
-      >
-        <Field label="字段名称" required>
-          {(id, cls) => <TextInput id={id} className={cls} placeholder="例如 指导老师" value={name} onChange={(e) => setName(e.target.value)} />}
-        </Field>
-        <Field label="类型" required>
-          {(id, cls) => <Select id={id} className={cls} options={FIELD_TYPES} value={type} onChange={(e) => setType(e.target.value)} />}
-        </Field>
-        {LIVE && CHOICE.includes(type) && (
-          <Field label="选项" required hint="用逗号或顿号分开，例如：比赛零件、调试测试、其他">
-            {(id, cls) => <TextInput id={id} className={cls} value={opts} onChange={(e) => setOpts(e.target.value)} />}
-          </Field>
+    <>
+      <Section title="申请表单" hint="选手提交订单时要填的信息，审核页会显示这些答案。拖动左侧手柄调整顺序。">
+        {error && <div className="text-body-m text-error">加载失败：{error}</div>}
+        {fields.length ? (
+          <ol ref={list} className={cx("m-0 flex list-none flex-col gap-2 p-0", drag && "select-none")}>
+            {fields.map((f, i) => (
+              <li
+                key={f.key}
+                style={{
+                  transform: !drag ? undefined
+                    : i === drag.from ? `translateY(${drag.dy}px)`
+                    : drag.from < i && i <= drag.over ? `translateY(${-drag.step}px)`
+                    : drag.over <= i && i < drag.from ? `translateY(${drag.step}px)` : undefined,
+                }}
+                className={cx(
+                  "relative grid grid-cols-[auto_40px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-sc-low py-2 pr-2 pl-1",
+                  drag && i !== drag.from && "transition-transform duration-150 ease-standard",
+                  drag?.from === i && "z-10 bg-sc-high shadow-[0_4px_12px_rgb(0_0_0/0.18)]",
+                )}
+              >
+                <button
+                  type="button"
+                  aria-label={`调整 ${f.name} 的顺序，当前第 ${i + 1} 位。按上下方向键移动`}
+                  title="拖动调整顺序"
+                  onPointerDown={(e) => {
+                    if (e.button !== 0 || !list.current) return;
+                    const rects = [...list.current.children].map((r) => r.getBoundingClientRect());
+                    grab.current = { y: e.clientY, mids: rects.map((r) => r.top + r.height / 2) };
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    setDrag({ from: i, over: i, dy: 0, step: rects[i].height + 8 });
+                  }}
+                  onPointerMove={(e) => {
+                    if (!drag || !grab.current) return;
+                    const dy = e.clientY - grab.current.y;
+                    const y = grab.current.mids[drag.from] + dy;
+                    const over = grab.current.mids.reduce((at, m, j) => (j < drag.from && y < m ? Math.min(at, j) : j > drag.from && y > m ? Math.max(at, j) : at), drag.from);
+                    setDrag({ ...drag, dy, over });
+                  }}
+                  onPointerUp={() => {
+                    if (drag) move(drag.from, drag.over);
+                    setDrag(null);
+                  }}
+                  onPointerCancel={() => setDrag(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); move(i, i + (e.key === "ArrowUp" ? -1 : 1)); }
+                  }}
+                  className={cx("flex h-10 w-8 touch-none items-center justify-center rounded-lg border-0 bg-transparent text-on-variant hover:bg-on-surface/8 focus-visible:outline-2 focus-visible:outline-primary", drag ? "cursor-grabbing" : "cursor-grab")}
+                >
+                  <Icon name="drag_indicator" size={20} />
+                </button>
+                <span className="flex size-10 items-center justify-center rounded-lg bg-secondary-container text-on-secondary-container">
+                  <Icon name={FIELD_ICON[typeOf(f.type)]} size={20} />
+                </span>
+                <button type="button" onClick={() => open(f)} className="min-w-0 cursor-pointer border-0 bg-transparent p-0 text-left text-on-surface">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <b className="truncate text-label-l font-medium">{f.name}</b>
+                    {f.req && <span className="inline-flex h-5 flex-none items-center rounded-md bg-primary/12 px-1.5 text-[11px] font-medium text-primary">必填</span>}
+                  </span>
+                  <small className="block truncate text-body-s text-on-variant">{fieldSummary(f)}</small>
+                </button>
+                <IconButton icon="edit" label={`编辑 ${f.name}`} size={40} onClick={() => open(f)} />
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <Empty icon="list_alt" title="还没有字段，选手提交时不用填写额外信息" />
         )}
-      </Sheet>
-    </Section>
+        <Actions>
+          <Button variant="tonal" icon="add" onClick={() => open(null)}>添加字段</Button>
+        </Actions>
+      </Section>
+
+      {fields.length > 0 && (
+        <Section title="预览" hint="选手在提交页第 3 步看到的样子。可以试着填写，不会保存。">
+          <div className="grid gap-4 rounded-xl bg-surface p-5 shadow-[inset_0_0_0_1px_var(--md-outline-variant)] sm:grid-cols-2 max-sm:p-4">
+            {preview.map((f) => (
+              <FormFieldInput
+                key={f.id}
+                field={f}
+                value={answers[f.id]}
+                error={touched[f.id] ? answerError(f, answers[f.id]) : ""}
+                onChange={(a) => setAnswers((cur) => ({ ...cur, [f.id]: a }))}
+                onBlur={() => setTouched((cur) => ({ ...cur, [f.id]: true }))}
+                className={isWide(f) ? "sm:col-span-2" : ""}
+              />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      <FieldEditor
+        key={editing?.n ?? 0}
+        open={!!editing}
+        field={editing?.field ?? null}
+        onClose={() => setEditing(null)}
+        onSave={(row) => {
+          const known = fields.some((x) => x.key === row.key);
+          return save(known ? fields.map((x) => (x.key === row.key ? row : x)) : [...fields, row], known ? `已保存 ${row.name}` : `已添加 ${row.name}`);
+        }}
+        onDelete={async () => {
+          const f = editing?.field;
+          if (f && (await save(fields.filter((x) => x.key !== f.key), `已删除 ${f.name}`))) setEditing(null);
+        }}
+      />
+    </>
   );
 }
 
@@ -726,7 +922,7 @@ function DaemonTab() {
             <Button variant="text" onClick={() => setRevoke(null)}>返回</Button>
             <Button
               variant="text"
-              className="text-error"
+              className="text-error!"
               onClick={async () => {
                 if (!target) return;
                 const r = await settingsApi.revokeDaemon(target);

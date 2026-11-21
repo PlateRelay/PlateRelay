@@ -38,6 +38,46 @@ export interface FormField {
   type: FormFieldType;
   required: boolean;
   options?: string[];
+  /** Shown under the label; Markdown (bold, italics, code, links, lists). */
+  description?: string;
+  placeholder?: string;
+  /** Text fields: allowed length in characters, counted after trimming. */
+  minLength?: number;
+  maxLength?: number;
+  /** Number fields: allowed range, inclusive. */
+  min?: number;
+  max?: number;
+}
+
+export type FormAnswerIssue = "required" | "type" | "too_short" | "too_long" | "too_small" | "too_large";
+
+/** What is wrong with one answer, or null. The panel checks submissions with this, the web app checks as people type. */
+export function formAnswerIssue(f: FormField, value: unknown): FormAnswerIssue | null {
+  const text = typeof value === "string" ? value.trim() : value;
+  const empty = text === null || text === undefined || text === "" || (Array.isArray(text) && !text.length);
+  if (empty) return f.required ? "required" : null;
+  if (f.type === "number") {
+    if (typeof text !== "number" || !Number.isFinite(text)) return "type";
+    if (f.min !== undefined && text < f.min) return "too_small";
+    if (f.max !== undefined && text > f.max) return "too_large";
+    return null;
+  }
+  if (f.type === "multi") return Array.isArray(text) && text.every((x) => typeof x === "string" && !!f.options?.includes(x)) ? null : "type";
+  if (typeof text !== "string") return "type";
+  if (f.type === "single") return f.options?.includes(text) ? null : "type";
+  const n = [...text].length;
+  if (f.minLength !== undefined && n < f.minLength) return "too_short";
+  if (f.maxLength !== undefined && n > f.maxLength) return "too_long";
+  return null;
+}
+
+/** What is wrong with a field's own settings, or null. */
+export function formFieldProblem(f: FormField): string | null {
+  if (!f.label.trim()) return "a field needs a label";
+  if ((f.type === "single" || f.type === "multi") && !f.options?.length) return "a choice field needs options";
+  if (f.minLength !== undefined && f.maxLength !== undefined && f.minLength > f.maxLength) return "minLength is above maxLength";
+  if (f.min !== undefined && f.max !== undefined && f.min > f.max) return "min is above max";
+  return null;
 }
 
 export interface AnswerSnapshot {

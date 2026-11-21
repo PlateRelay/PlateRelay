@@ -4,12 +4,13 @@ import { useNavigate } from "react-router";
 import { Button, IconButton } from "../../components/Button";
 import { StatusChip } from "../../components/Chip";
 import { Checkbox, RowCheckbox } from "../../components/Checkbox";
-import { Field, Select, TextArea, TextInput } from "../../components/Field";
 import { Icon } from "../../components/icons/Icon";
 import { FilamentDots, ModelThumb } from "../../components/ModelThumb";
 import { Page, PageHeader } from "../../components/Page";
 import { Sheet } from "../../components/Sheet";
-import { BED_TYPES, BED_TYPE_LABEL, COLOUR_PREFS, COLOUR_PREF_LABEL, type ColourPref, DEFAULT_COLOUR_PREF, type FormView, type OrderPreview, type OrderView, type ParsedUpload, type PlateCheck, type ResourcesView } from "@platerelay/shared";
+import { type Answer, FormFieldInput, answerError, answerValue, isWide } from "../../components/FormFields";
+import { fromFieldRow, useFields as useFieldRows } from "../../lib/settingsApi";
+import { BED_TYPES, BED_TYPE_LABEL, COLOUR_PREFS, COLOUR_PREF_LABEL, type ColourPref, DEFAULT_COLOUR_PREF, type FormField, type FormView, type OrderPreview, type OrderView, type ParsedUpload, type PlateCheck, type ResourcesView } from "@platerelay/shared";
 import { LinearDeterminate, LinearIndeterminate } from "../../components/WavyProgress";
 import { useToast } from "../../components/Toast";
 import { LIVE, api, upload as uploadFile } from "../../lib/api";
@@ -23,34 +24,14 @@ import { ResourcesPanel } from "./ResourcesPanel";
 
 const MOCK_QUEUE_AHEAD = 7, MAX_MB = 200;
 
-type FieldDef = { id: string; label: string; type: "select" | "multi" | "text" | "number" | "textarea"; req: boolean; opts?: string[]; min?: number; ph?: string; wide?: boolean };
-type Answer = string | string[];
-
-/* Application form fields are configured by admins (系统设置 → 申请表单); the prototype uses these. */
-const MOCK_FIELDS: FieldDef[] = [
-  { id: "purpose", label: "用途", type: "select", req: true, opts: ["比赛零件", "调试测试", "备件替换", "其他"] },
-  { id: "team", label: "队伍 / 编号", type: "text", req: true, ph: "例如 T-014" },
-  { id: "reason", label: "打印理由", type: "textarea", req: true, min: 10, ph: "说明这个零件的用途和为什么需要打印（至少 10 个字）", wide: true },
-  { id: "note", label: "备注", type: "textarea", req: false, ph: "选填：给审核人的补充说明", wide: true },
-];
-
-const fromServer = (v: FormView): FieldDef[] =>
-  v.fields.map((f) => ({
-    id: f.id,
-    label: f.label,
-    type: f.type === "single" ? "select" : f.type,
-    req: f.required,
-    opts: f.options,
-    wide: f.type === "textarea" || f.type === "multi",
-  }));
-
-/** The request form as configured on the server, or the prototype's fields. */
-function useFields() {
-  const [fields, setFields] = useState<FieldDef[] | null>(LIVE ? null : MOCK_FIELDS);
+/** The request form as configured on the server, or the prototype's fields (系统设置 → 申请表单). */
+function useFields(): FormField[] | null {
+  const mock = useFieldRows().rows;
+  const [fields, setFields] = useState<FormField[] | null>(null);
   useEffect(() => {
-    if (LIVE) void api<FormView>("/api/form").then((r) => setFields(r.ok ? fromServer(r.data) : []));
+    if (LIVE) void api<FormView>("/api/form").then((r) => setFields(r.ok ? r.data.fields : []));
   }, []);
-  return fields;
+  return LIVE ? fields : mock.map(fromFieldRow);
 }
 
 type Plate = { n: number; model: string; modelId?: string; nozzle: string; time: string; g: number; fil: [string, string][]; st: "ok" | "warn" | "err"; note?: string; res?: "models" | "materials"; thumb?: string | null; check?: PlateCheck };
@@ -377,15 +358,7 @@ export function SubmitPage() {
     setFileBed(null);
   };
 
-  const fieldErr = (f: FieldDef) => {
-    const a = form[f.id];
-    if (Array.isArray(a)) return f.req && !a.length ? "必填" : "";
-    const v = (a || "").trim();
-    if (f.req && !v) return "必填";
-    if (f.min && v && v.length < f.min) return `至少 ${f.min} 个字，现在 ${v.length}`;
-    if (f.type === "number" && v && !Number.isFinite(Number(v))) return "要填数字";
-    return "";
-  };
+  const fieldErr = (f: FormField) => answerError(f, form[f.id]);
   const formOk = FIELDS.every((f) => !fieldErr(f));
   const canSubmit = phase === "parsed" && sel.length > 0 && formOk && agree;
   const total = sel.reduce((a, p) => a + mins(p.time), 0), grams = sel.reduce((a, p) => a + p.g, 0);
@@ -401,7 +374,7 @@ export function SubmitPage() {
     if (!LIVE || !upload) return setDone(sel.map((p, i) => ({ id: "#" + (1048 + i), n: p.n, model: p.model, time: p.time })));
     const body = new FormData();
     body.append("file", upload);
-    body.append("answers", JSON.stringify(Object.fromEntries(FIELDS.map((f) => [f.id, f.type === "number" && form[f.id] ? Number(form[f.id]) : (form[f.id] ?? "")]))));
+    body.append("answers", JSON.stringify(Object.fromEntries(FIELDS.map((f) => [f.id, answerValue(f, form[f.id])]))));
     body.append("plates", JSON.stringify(sel.map((p) => p.n)));
     body.append("colour", colour);
     if (rules?.allowPlateChoice && bed && bedOptions.includes(bed)) body.append("bedType", bed);
@@ -657,37 +630,17 @@ export function SubmitPage() {
               {phase === "parsed" && (
                 <Step n={3} title="申请信息" right="字段由管理员配置">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {FIELDS.map((f) => {
-                      const a = form[f.id];
-                      const v = typeof a === "string" ? a : "";
-                      const err = all || touched[f.id] ? fieldErr(f) : "";
-                      const set = (val: Answer) => setForm({ ...form, [f.id]: val });
-                      const blur = () => setTouched({ ...touched, [f.id]: true });
-                      return (
-                        <Field key={f.id} label={f.label} required={f.req} error={err || undefined} counter={f.min ? `${v.trim().length} / ${f.min}+` : undefined} className={f.wide ? "sm:col-span-2" : ""}>
-                          {(id, cls) =>
-                            f.type === "select" ? (
-                              <Select id={id} className={cls} options={f.opts ?? []} placeholder="请选择" value={v} onChange={(e) => (set(e.target.value), blur())} />
-                            ) : f.type === "multi" ? (
-                              <div id={id} className="flex flex-wrap gap-x-5 gap-y-1">
-                                {(f.opts ?? []).map((o) => {
-                                  const cur = Array.isArray(a) ? a : [];
-                                  return (
-                                    <Checkbox key={o} checked={cur.includes(o)} onChange={(on) => (set(on ? [...cur, o] : cur.filter((x) => x !== o)), blur())}>
-                                      {o}
-                                    </Checkbox>
-                                  );
-                                })}
-                              </div>
-                            ) : f.type === "textarea" ? (
-                              <TextArea id={id} className={cls} placeholder={f.ph} value={v} onChange={(e) => set(e.target.value)} onBlur={blur} />
-                            ) : (
-                              <TextInput id={id} className={cls} placeholder={f.ph} inputMode={f.type === "number" ? "decimal" : undefined} value={v} onChange={(e) => set(e.target.value)} onBlur={blur} />
-                            )
-                          }
-                        </Field>
-                      );
-                    })}
+                    {FIELDS.map((f) => (
+                      <FormFieldInput
+                        key={f.id}
+                        field={f}
+                        value={form[f.id]}
+                        error={all || touched[f.id] ? fieldErr(f) : ""}
+                        onChange={(val) => setForm((cur) => ({ ...cur, [f.id]: val }))}
+                        onBlur={() => setTouched((cur) => ({ ...cur, [f.id]: true }))}
+                        className={isWide(f) ? "sm:col-span-2" : ""}
+                      />
+                    ))}
                   </div>
                 </Step>
               )}
