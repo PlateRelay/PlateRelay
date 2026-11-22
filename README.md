@@ -170,6 +170,9 @@ Standard workflow: Fork the repository → Create a feature branch (`git checkou
   <a href="https://github.com/belugaQAQ">
     <img src="docs/assets/avatars/belugaqaq.png" alt="belugaQAQ" title="belugaQAQ" width="64" height="64" />
   </a>
+  <a href="https://github.com/z4zhishi">
+    <img src="docs/assets/avatars/z4zhishi.png" alt="z4zhishi" title="z4zhishi" width="64" height="64" />
+  </a>
 </p>
 
 ## License

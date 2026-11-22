@@ -170,6 +170,9 @@ uv run --project daemon pytest daemon/tests # daemon 与模拟打印机测试
   <a href="https://github.com/belugaQAQ">
     <img src="docs/assets/avatars/belugaqaq.png" alt="belugaQAQ" title="belugaQAQ" width="64" height="64" />
   </a>
+  <a href="https://github.com/z4zhishi">
+    <img src="docs/assets/avatars/z4zhishi.png" alt="z4zhishi" title="z4zhishi" width="64" height="64" />
+  </a>
 </p>
 
 ## 版权与许可证
