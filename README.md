@@ -12,7 +12,7 @@
 
 An open-source, self-hosted 3D printing platform for shared-printer environments such as hackathons, makerspaces, and university labs—combining centralized multi-printer management with auditable review, scheduling, and fulfillment workflows while isolating users from physical hardware.
 
-[Getting Started](#getting-started) · [Roadmap](#roadmap) · [Report Bug](https://github.com/TomChicken-on-github/PlateRelay/issues/new) · [Request Feature](https://github.com/TomChicken-on-github/PlateRelay/issues/new)
+[Getting Started](#getting-started) · [Roadmap](#roadmap) · [Report Bug](https://github.com/PlateRelay/PlateRelay/issues/new) · [Request Feature](https://github.com/PlateRelay/PlateRelay/issues/new)
 
 **English** · [简体中文](README.zh-CN.md)
 
@@ -162,8 +162,8 @@ Standard workflow: Fork the repository → Create a feature branch (`git checkou
 ### Contributors
 
 <p>
-  <a href="https://github.com/TomChicken-on-github/PlateRelay/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=TomChicken-on-github/PlateRelay" alt="GitHub Contributors" />
+  <a href="https://github.com/PlateRelay/PlateRelay/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=PlateRelay/PlateRelay" alt="GitHub Contributors" />
   </a>
   <img src="docs/assets/avatars/anying.png" alt="黯影" title="黯影" width="64" height="64" />
   <img src="docs/assets/avatars/yusi.png" alt="蕍飔" title="蕍飔" width="64" height="64" />
@@ -191,8 +191,8 @@ PlateRelay is not affiliated with Bambu Lab or the ha-bambulab project.
 
 ## Contact
 
-- Issues & Feature Requests: [GitHub Issues](https://github.com/TomChicken-on-github/PlateRelay/issues)
-- Repository: [TomChicken-on-github/PlateRelay](https://github.com/TomChicken-on-github/PlateRelay)
+- Issues & Feature Requests: [GitHub Issues](https://github.com/PlateRelay/PlateRelay/issues)
+- Repository: [PlateRelay/PlateRelay](https://github.com/PlateRelay/PlateRelay)
 
 ## Acknowledgments
 
@@ -200,16 +200,16 @@ PlateRelay is not affiliated with Bambu Lab or the ha-bambulab project.
 - [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[ci-shield]: https://img.shields.io/github/actions/workflow/status/TomChicken-on-github/PlateRelay/contract.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Contract%20CI
-[ci-url]: https://github.com/TomChicken-on-github/PlateRelay/actions/workflows/contract.yml
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/PlateRelay/PlateRelay/contract.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Contract%20CI
+[ci-url]: https://github.com/PlateRelay/PlateRelay/actions/workflows/contract.yml
 [status-shield]: https://img.shields.io/badge/Status-Early%20Development-orange?style=for-the-badge
 [status-url]: #roadmap
-[last-commit-shield]: https://img.shields.io/github/last-commit/TomChicken-on-github/PlateRelay?style=for-the-badge
-[last-commit-url]: https://github.com/TomChicken-on-github/PlateRelay/commits/main
-[stars-shield]: https://img.shields.io/github/stars/TomChicken-on-github/PlateRelay?style=for-the-badge
-[stars-url]: https://github.com/TomChicken-on-github/PlateRelay/stargazers
-[issues-shield]: https://img.shields.io/github/issues/TomChicken-on-github/PlateRelay?style=for-the-badge
-[issues-url]: https://github.com/TomChicken-on-github/PlateRelay/issues
+[last-commit-shield]: https://img.shields.io/github/last-commit/PlateRelay/PlateRelay?style=for-the-badge
+[last-commit-url]: https://github.com/PlateRelay/PlateRelay/commits/main
+[stars-shield]: https://img.shields.io/github/stars/PlateRelay/PlateRelay?style=for-the-badge
+[stars-url]: https://github.com/PlateRelay/PlateRelay/stargazers
+[issues-shield]: https://img.shields.io/github/issues/PlateRelay/PlateRelay?style=for-the-badge
+[issues-url]: https://github.com/PlateRelay/PlateRelay/issues
 [prs-shield]: https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge
 [prs-url]: #contributing
 [license-shield]: https://img.shields.io/badge/License-GPL--3.0--only-blue?style=for-the-badge

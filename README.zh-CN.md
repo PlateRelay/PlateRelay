@@ -12,7 +12,7 @@
 
 面向黑客松、创客空间、高校实验室等共享打印机场景的开源自托管 3D 打印平台，提供多机集中管控以及可审计的审核、调度与成品交付流程，将用户与物理打印设备隔离。
 
-[快速开始](#快速开始) · [开发路线图](#开发路线图) · [报告问题](https://github.com/TomChicken-on-github/PlateRelay/issues/new) · [功能建议](https://github.com/TomChicken-on-github/PlateRelay/issues/new)
+[快速开始](#快速开始) · [开发路线图](#开发路线图) · [报告问题](https://github.com/PlateRelay/PlateRelay/issues/new) · [功能建议](https://github.com/PlateRelay/PlateRelay/issues/new)
 
 [English](README.md) · **简体中文**
 
@@ -162,8 +162,8 @@ uv run --project daemon pytest daemon/tests # daemon 与模拟打印机测试
 ### 贡献者
 
 <p>
-  <a href="https://github.com/TomChicken-on-github/PlateRelay/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=TomChicken-on-github/PlateRelay" alt="GitHub 贡献者" />
+  <a href="https://github.com/PlateRelay/PlateRelay/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=PlateRelay/PlateRelay" alt="GitHub 贡献者" />
   </a>
   <img src="docs/assets/avatars/anying.png" alt="黯影" title="黯影" width="64" height="64" />
   <img src="docs/assets/avatars/yusi.png" alt="蕍飔" title="蕍飔" width="64" height="64" />
@@ -191,8 +191,8 @@ PlateRelay 与拓竹（Bambu Lab）、ha-bambulab 项目均无关联。
 
 ## 联系方式
 
-- 问题反馈与功能建议：[GitHub Issues](https://github.com/TomChicken-on-github/PlateRelay/issues)
-- 项目仓库：[TomChicken-on-github/PlateRelay](https://github.com/TomChicken-on-github/PlateRelay)
+- 问题反馈与功能建议：[GitHub Issues](https://github.com/PlateRelay/PlateRelay/issues)
+- 项目仓库：[PlateRelay/PlateRelay](https://github.com/PlateRelay/PlateRelay)
 
 ## 致谢
 
@@ -200,16 +200,16 @@ PlateRelay 与拓竹（Bambu Lab）、ha-bambulab 项目均无关联。
 - [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[ci-shield]: https://img.shields.io/github/actions/workflow/status/TomChicken-on-github/PlateRelay/contract.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Contract%20CI
-[ci-url]: https://github.com/TomChicken-on-github/PlateRelay/actions/workflows/contract.yml
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/PlateRelay/PlateRelay/contract.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Contract%20CI
+[ci-url]: https://github.com/PlateRelay/PlateRelay/actions/workflows/contract.yml
 [status-shield]: https://img.shields.io/badge/Status-Early%20Development-orange?style=for-the-badge
 [status-url]: #开发路线图
-[last-commit-shield]: https://img.shields.io/github/last-commit/TomChicken-on-github/PlateRelay?style=for-the-badge
-[last-commit-url]: https://github.com/TomChicken-on-github/PlateRelay/commits/main
-[stars-shield]: https://img.shields.io/github/stars/TomChicken-on-github/PlateRelay?style=for-the-badge
-[stars-url]: https://github.com/TomChicken-on-github/PlateRelay/stargazers
-[issues-shield]: https://img.shields.io/github/issues/TomChicken-on-github/PlateRelay?style=for-the-badge
-[issues-url]: https://github.com/TomChicken-on-github/PlateRelay/issues
+[last-commit-shield]: https://img.shields.io/github/last-commit/PlateRelay/PlateRelay?style=for-the-badge
+[last-commit-url]: https://github.com/PlateRelay/PlateRelay/commits/main
+[stars-shield]: https://img.shields.io/github/stars/PlateRelay/PlateRelay?style=for-the-badge
+[stars-url]: https://github.com/PlateRelay/PlateRelay/stargazers
+[issues-shield]: https://img.shields.io/github/issues/PlateRelay/PlateRelay?style=for-the-badge
+[issues-url]: https://github.com/PlateRelay/PlateRelay/issues
 [prs-shield]: https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge
 [prs-url]: #参与贡献
 [license-shield]: https://img.shields.io/badge/License-GPL--3.0--only-blue?style=for-the-badge
