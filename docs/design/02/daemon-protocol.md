@@ -23,7 +23,7 @@
 | 步骤 | 内容 |
 | --- | --- |
 | 1 | 管理员在 daemon 页点"生成安装命令"。面板新建 E-ENR，令牌 15 分钟有效、只能用一次（F-DMN-01）。 |
-| 2 | 面板按平台给出**一条**命令（Linux / Windows / Docker，F-DMN-06），令牌用 `--token` 参数传给安装脚本（Q156）。脚本也接受环境变量 `PLATERELAY_ENROLL_TOKEN`，给不想让令牌出现在命令行里的人用。用掉令牌后，脚本尽量把这条命令从 shell 历史里删掉，删不掉不影响安装。 |
+| 2 | 面板按平台给出**一条**命令（Linux / Windows / Docker，F-DMN-06），令牌用 `--token` 参数传给安装脚本（Q156），面板地址用 `--panel` 传。原生安装的命令是"下载安装脚本并执行"，例如 `curl -fsSL <下载源>/<版本>/install.sh \| sh -s -- --panel <面板地址> --token <令牌> --name <名称>`，Windows 用 PowerShell 的 `install.ps1`。脚本不由面板提供：它和 daemon 同版本发布在下载源上（DAE-PKG-06），面板只拼命令。脚本也接受环境变量 `PLATERELAY_ENROLL_TOKEN`，给不想让令牌出现在命令行里的人用。用掉令牌后，脚本尽量把这条命令从 shell 历史里删掉，删不掉不影响安装。 |
 | 3 | daemon 在本机生成 RSA-3072 密钥对。私钥只存在本机：Linux 是权限 0600 的文件，Windows 用 DPAPI 加密后存，Docker 放在挂载卷里（F-DMN-02、INV-07）。 |
 | 4 | daemon 调 `POST /daemon/v1/enroll`：`{ token, publicKey, name, platform, daemonVersion, protocolVersion }`，`publicKey` 是 SPKI DER 的 base64。 |
 | 5 | 面板校验令牌，作废它，新建 E-DMN，返回 `{ daemonId }`。daemon 把面板地址和 `daemonId` 写进自己的配置文件（不含任何秘密）。 |

@@ -108,6 +108,7 @@ daemon 里一条 `job.start` 的流程（Q422）。面板那边的订单、打�
 | DAE-PKG-03 | Docker：基础镜像 `python:3.12-slim`，依赖按同一个 `uv.lock` 装，buildx 出 amd64 和 arm64，发布到 GHCR，每个版本固定 tag，面板给的命令带镜像 digest。非 root 运行，`network_mode: host`（F-DMN-06），`/data` 卷放 SQLite、私钥、下载中的临时文件。面板生成 compose 片段，注册令牌走环境变量 `PLATERELAY_ENROLL_TOKEN`。 |
 | DAE-PKG-04 | Docker 只支持 Linux 主机，含树莓派。Windows 和 macOS 的 Docker Desktop 跑在虚拟机里，host 网络和组播到不了局域网，不支持；Windows 一律装原生服务（Q257）。 |
 | DAE-PKG-05 | 升级只由人执行（NG-10、F-DMN-07）：原生是面板给的命令，换 wheel 和锁文件后重启服务；Docker 是 `docker compose pull && docker compose up -d`。文档写明不要用 Watchtower 一类自动更新。 |
+| DAE-PKG-06 | 下载源：安装脚本（`install.sh`、`install.ps1`）、wheel、`uv.lock`、ffmpeg 都按版本发布在同一个下载源上，默认 GitHub 发布页，也可以是项目自己的站点或国内镜像。面板不提供脚本下载，只按"下载源 + daemon 版本"拼出安装命令，所以面板升级和脚本维护互不牵连。下载源是面板设置里的一项，默认 GitHub，现场访问 GitHub 不稳时改成镜像。脚本本身靠 HTTPS 和固定版本号保证；脚本下载的 wheel、ffmpeg 照旧核对 sha256（DAE-PKG-01），sha256 写在脚本里，所以换成镜像也不降低校验。 |
 
 ## 8. 排查（DAE-OPS）
 
