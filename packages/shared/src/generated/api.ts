@@ -2363,8 +2363,8 @@ export interface components {
             revokedAt: string | null;
             /** Format: date-time */
             createdAt: string;
-            /** @description 只在创建时返回一次 */
-            code?: string;
+            /** @description 邀请码，大写存储；列表和创建结果都返回 */
+            code: string;
         };
         Daemon: {
             /** Format: uuid */
@@ -5122,6 +5122,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @description 自定义邀请码，不区分大小写，和其他有效的码不能重复；不填时随机生成 6 位 */
+                    code?: string;
                     label: string;
                     maxUses: number;
                     /** Format: date-time */

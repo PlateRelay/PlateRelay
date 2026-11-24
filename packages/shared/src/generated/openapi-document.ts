@@ -4973,6 +4973,11 @@ export const openapiDocument: Record<string, unknown> = {
               "schema": {
                 "type": "object",
                 "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{4,32}$",
+                    "description": "自定义邀请码，不区分大小写，和其他有效的码不能重复；不填时随机生成 6 位"
+                  },
                   "label": {
                     "type": "string"
                   },
@@ -8527,11 +8532,12 @@ export const openapiDocument: Record<string, unknown> = {
           },
           "code": {
             "type": "string",
-            "description": "只在创建时返回一次"
+            "description": "邀请码，大写存储；列表和创建结果都返回"
           }
         },
         "required": [
           "id",
+          "code",
           "label",
           "maxUses",
           "usedCount",

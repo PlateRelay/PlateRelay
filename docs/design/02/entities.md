@@ -13,7 +13,7 @@
 | E-GEN-05 | 订单和打印机的状态转换不用 `version`，用行锁 + "预期的当前状态"（Q138，API-CONC-02）。 |
 | E-GEN-06 | 不做软删除列。会被引用的东西（用户、打印机、daemon）用"停用 / 吊销"表示不再使用，不真删；只有从没被引用过的才能真删（Q158）。 |
 | E-GEN-07 | 枚举用 PostgreSQL enum，值用英文大写（F-UI-02），和文档 1 的 `S-` 编号一一对应（§2）。 |
-| E-GEN-08 | 凭据（访问码、令牌、私钥、验证码）只存哈希或密文，不存明文；任何接口都不返回（INV-07）。 |
+| E-GEN-08 | 凭据（访问码、令牌、私钥、验证码）只存哈希或密文，不存明文；任何接口都不返回（INV-07）。邀请码不算凭据，存明文（E-INV，Q489）。 |
 | E-GEN-09 | 文件内容放对象存储（F-OPS-01），表里只存对象键，列名以 `_key` 结尾。 |
 | E-GEN-10 | 只追加的表（审计日志、订单记录）用数据库触发器拒绝 UPDATE 和 DELETE（INV-06）。 |
 
@@ -144,7 +144,9 @@
 
 ### E-INV `invite_codes`
 
-`id`、`code_hash`、`label`、`max_uses`（0 = 不限）、`used_count`、`expires_at?`、`created_by`、`created_at`、`revoked_at?`。邀请码只注册为 `APPLICANT`（Q178），要别的角色由管理员事后改。
+`id`、`code`、`label`、`max_uses`（0 = 不限）、`used_count`、`expires_at?`、`created_by`、`created_at`、`revoked_at?`。邀请码只注册为 `APPLICANT`（Q178），要别的角色由管理员事后改。
+
+`code` 存明文，统一转成大写；没撤下、没过期、没用完的码之间唯一。邀请码本来就要分发出去，只能注册成申请者，有次数和过期时间兜底，所以不算 E-GEN-08 的凭据；管理员可以在列表里随时查看和复制。审计只记邀请码的 `id` 和 `label`，不记码本身（Q489）。
 
 ### E-OTP `verification_codes`
 
