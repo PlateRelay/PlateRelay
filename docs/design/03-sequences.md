@@ -155,7 +155,7 @@ sequenceDiagram
 | 11–14 | 传文件期间有人点停止 | daemon 中止传输、删掉传了一半的文件、记下这个 jobRef 不再发开打，回 job.cancelled beforeStart=true → 任务结局 STOPPED_BEFORE_START，订单回原位（SEQ-04） | MSG-CMD-START、Q223 |
 | 11–14 | 下载或上传失败、哈希不对 | daemon 在同一条命令里自动重试，各最多 3 次，每次超时 CFG-CMD-02；用完回 failed → 文件下发失败，订单回排队中原位（S-ORD-T09、R-DSP-08），任务结局 SEND_FAILED。开打指令发出后不再重试 | MSG-CMD-START |
 | 10 | 命令过期 | daemon 回 expired → 文件下发失败处理 | MSG-CMD-TTL |
-| 15–17 | job.staged 后过了 CFG-CMD-05（默认 60 秒，真机实测再定），任务 prepared_at 仍为空（打印机自己没报过准备中） | 进待办"开打可能没到"，一直留到有人处理或打印机有上报。现场人员看摄像头后点"停止并退回队列"（stopPrint 发 job.stop；打印机报已停止 / 已取消，或 daemon 确认从文件放上打印机起一直连着、runSeq 没变，删文件、记下不再开打、回 job.cancelled beforeStart=true → 任务结局 STOPPED_BEFORE_START，订单回原位，打印机进待清板）。daemon 确认不了的，打印机挂 JUDGE，由人判（R-PRT-08，Q395）。之后打印机才报这个 jobRef 准备中或开打 → 当外部任务（R-PRT-11，Q393）。**永远不自动重发开打**；重新派单时 daemon 会先确认打印机没在跑任务，不会打两次 | R-CMD-04、R-PRT-11、MSG-CMD-START、Q243 |
+| 15–17 | job.staged 后过了 CFG-CMD-05（默认 60 秒，真机实测再定），任务 prepared_at 仍为空（打印机自己没报过准备中） | 进待办"开打可能没到"，一直留到有人处理或打印机有上报。现场人员看摄像头后点"停止并退回队列"（stopPrint 发 job.stop；打印机报已停止 / 已取消，或 daemon 确认从文件放上打印机起一直连着、runSeq 没变，删文件、记下不再开打、回 job.cancelled beforeStart=true → 任务结局 STOPPED_BEFORE_START，订单回原位，打印机进待清板）。daemon 确认不了的，打印机挂 JUDGE，由人工裁定（R-PRT-08，Q395）。之后打印机才报这个 jobRef 准备中或开打 → 当外部任务（R-PRT-11，Q393）。**永远不自动重发开打**；重新派单时 daemon 会先确认打印机没在跑任务，不会打两次 | R-CMD-04、R-PRT-11、MSG-CMD-START、Q243 |
 | 14 | 发开打前打印机在跑任务 | daemon 回 rejected printer_busy，什么都不发 → 文件下发失败，订单回原位；打印机跟最新上报走，在跑外部任务就进工作（外部，Q317），否则进待清板（S-PRN-T21，Q370）。派单后打印机跑过东西（rejected printer_used）同样处理（Q363）；这两种不挂文件下发失败原因 | MSG-CMD-START |
 | 11–14 | 传输重试用完（如打印机存储放不下） | 任务结局 SEND_FAILED，订单回原位，打印机挂异常原因"文件下发失败"，现场人员看过后放出（R-PRT-27，Q400） | §4A.2、Q400 |
 | 17 | 开打前报错（如加热失败） | job.failed beforeStart → 订单回原位（S-ORD-T09），打印机进待清板，不另挂原因（Q397） | Q87、R-PRT-23 |

@@ -1907,9 +1907,9 @@ export const openapiDocument: Record<string, unknown> = {
         "tags": [
           "orders"
         ],
-        "summary": "人工判定：判失败、判打完或判没开打",
+        "summary": "人工裁定：失败、打完或没开打",
         "x-permission": "printer:operate",
-        "description": "只在这个任务的打印机挂着 JUDGE 原因时可用（对账分不清任务结局，或开打指令可能没到），否则 409 state_conflict；放出异常打印机时的判定走 releasePrinter。打印机上报这个任务正在运行时不能判，返回 409 state_conflict。判没开打（NOT_STARTED）：任务以 STOPPED_BEFORE_START 结束，订单回排队原位，打印机进待清板，面板给 daemon 发 job.stop 让它记下不再开打。",
+        "description": "只在这个任务的打印机挂着 JUDGE 原因时可用（对账分不清任务结局，或开打指令可能没到），否则 409 state_conflict；放出异常打印机时的裁定走 releasePrinter。打印机上报这个任务正在运行时不能判，返回 409 state_conflict。裁定没开打（NOT_STARTED）：任务以 STOPPED_BEFORE_START 结束，订单回排队原位，打印机进待清板，面板给 daemon 发 job.stop 让它记下不再开打。",
         "parameters": [
           {
             "$ref": "#/components/parameters/OrderId"
@@ -3092,7 +3092,7 @@ export const openapiDocument: Record<string, unknown> = {
         ],
         "summary": "停止打印",
         "x-permission": "printer:stop",
-        "description": "前端先让人选原因并二次确认。任务在传文件（daemon 中止传输并确认没开打）、准备中、打印中、暂停中都发 job.stop，没有命令锁；打印机还报打印中或暂停中时可以再点。打印机报告没开打就停下 → 订单回原位；开打后停下 → 失败。\"开打可能没到\"待办里的\"停止并退回队列\"也是调这个接口：订单只在打印机报已停止 / 已取消，或 daemon 确认没开打后才回原位；daemon 确认不了时打印机挂 JUDGE，由人判。",
+        "description": "前端先让人选原因并二次确认。任务在传文件（daemon 中止传输并确认没开打）、准备中、打印中、暂停中都发 job.stop，没有命令锁；打印机还报打印中或暂停中时可以再点。打印机报告没开打就停下 → 订单回原位；开打后停下 → 失败。\"开打可能没到\"待办里的\"停止并退回队列\"也是调这个接口：订单只在打印机报已停止 / 已取消，或 daemon 确认没开打后才回原位；daemon 确认不了时打印机挂 JUDGE，由人工裁定。",
         "parameters": [
           {
             "$ref": "#/components/parameters/PrinterId"
@@ -3394,7 +3394,7 @@ export const openapiDocument: Record<string, unknown> = {
         ],
         "summary": "放出异常的打印机",
         "x-permission": "printer:operate",
-        "description": "去掉这台打印机除 OFFLINE 以外的全部异常原因，没有别的原因就进待清板；还离线的留在异常，重连后再进待清板。打印机连着且最新上报正在运行时返回 409 state_conflict；挂着 OFFLINE 时不看旧上报。有当前任务时必须带 expectedJobId 和 outcome，没有时两者都不带，否则 422。判没开打时给 daemon 发 job.stop。写审计。",
+        "description": "去掉这台打印机除 OFFLINE 以外的全部异常原因，没有别的原因就进待清板；还离线的留在异常，重连后再进待清板。打印机连着且最新上报正在运行时返回 409 state_conflict；挂着 OFFLINE 时不看旧上报。有当前任务时必须带 expectedJobId 和 outcome，没有时两者都不带，否则 422。裁定没开打时给 daemon 发 job.stop。写审计。",
         "parameters": [
           {
             "$ref": "#/components/parameters/PrinterId"
@@ -3435,7 +3435,7 @@ export const openapiDocument: Record<string, unknown> = {
                       "NOT_STARTED",
                       null
                     ],
-                    "description": "当前任务的判定"
+                    "description": "当前任务的裁定"
                   },
                   "reason": {
                     "type": "string",

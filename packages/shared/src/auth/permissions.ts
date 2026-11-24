@@ -30,7 +30,7 @@ export const PERMISSIONS = [
   /** 铲件入库、确认清板。 */
   "order:store",
   "order:redeem",
-  /** 进打印机详情、看报错和事件日志、处理报错、人工判定、放出异常的打印机。 */
+  /** 进打印机详情、看报错和事件日志、处理报错、人工裁定、放出异常的打印机。 */
   "printer:operate",
   "printer:stop",
   /** 手动刷新机器状态。 */
