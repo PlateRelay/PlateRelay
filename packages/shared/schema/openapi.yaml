@@ -3573,6 +3573,12 @@ components:
         options:
           type: array
           items: {type: string}
+        description: {type: string, maxLength: 2000, description: 显示在标题下方的说明，Markdown 格式}
+        placeholder: {type: string, maxLength: 100}
+        minLength: {type: integer, minimum: 0, maximum: 10000, description: 文本字段的最少字数（去掉首尾空白后）}
+        maxLength: {type: integer, minimum: 1, maximum: 10000, description: 文本字段的最多字数}
+        min: {type: number, description: 数字字段的最小值（含）}
+        max: {type: number, description: 数字字段的最大值（含）}
       required: [id, label, type, required]
       additionalProperties: false
     Form:
