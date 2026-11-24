@@ -256,7 +256,7 @@ sequenceDiagram
   actor S as 现场
   Note over D,P: 45 秒没收到任何消息（MSG-HB-02）
   P->>P: 它名下每台打印机挂异常原因 OFFLINE（S-PRN-T22，不论原来什么状态，Q399），订单状态不动（R-ARB-12）
-  P-->>S: 通知"打印机异常：联系不上"
+  P-->>S: 通知"打印机异常：离线"
   Note over R,D: 断线期间 daemon 照常监听，事件进本机发件箱（MSG-ENV-03）
   D->>P: 重连：hello → challenge → auth → welcome（SEQ-10 后半）
   D->>P: 每台打印机一份 printer.snapshot（MSG-RECON-01）
