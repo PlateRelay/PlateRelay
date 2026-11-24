@@ -3394,7 +3394,7 @@ export const openapiDocument: Record<string, unknown> = {
         ],
         "summary": "放出异常的打印机",
         "x-permission": "printer:operate",
-        "description": "去掉这台打印机除 OFFLINE 以外的全部异常原因，没有别的原因就进待清板；还联系不上的留在异常，重连后再进待清板。打印机连着且最新上报正在运行时返回 409 state_conflict；挂着 OFFLINE 时不看旧上报。有当前任务时必须带 expectedJobId 和 outcome，没有时两者都不带，否则 422。判没开打时给 daemon 发 job.stop。写审计。",
+        "description": "去掉这台打印机除 OFFLINE 以外的全部异常原因，没有别的原因就进待清板；还离线的留在异常，重连后再进待清板。打印机连着且最新上报正在运行时返回 409 state_conflict；挂着 OFFLINE 时不看旧上报。有当前任务时必须带 expectedJobId 和 outcome，没有时两者都不带，否则 422。判没开打时给 daemon 发 job.stop。写审计。",
         "parameters": [
           {
             "$ref": "#/components/parameters/PrinterId"
@@ -5194,7 +5194,7 @@ export const openapiDocument: Record<string, unknown> = {
         ],
         "summary": "吊销",
         "x-permission": "daemon:manage",
-        "description": "立刻断开它的连接；它名下的打印机异常(联系不上)，要管理员移到别的 daemon。",
+        "description": "立刻断开它的连接；它名下的打印机异常(离线)，要管理员移到别的 daemon。",
         "parameters": [
           {
             "name": "daemonId",
