@@ -302,7 +302,8 @@ async def test_power_cycle_mid_print_is_left_for_people_to_judge(panel, sim, har
 
     await sim.operate("power_cycle", seconds=1.0)
     await panel.wait_for(lambda: len(panel.events("connection.up")) == 2, timeout=15)
-    back = await panel.wait_snapshot(printer_id, lambda item: item["connected"] and item["state"] == "IDLE")
+    # 只看重连之后的快照：开打前那份也是空闲，重连快照还没到时会被误拿到
+    back = await panel.wait_snapshot(printer_id, lambda item: item["connected"] and item["state"] == "IDLE" and item["seq"] > panel.events("connection.up")[-1]["seq"])
     assert back["deviceBoot"] != snapshot["deviceBoot"]
     await settle()
     # 任务没了，但打印机没说它是打完还是失败：daemon 不替它下结论
