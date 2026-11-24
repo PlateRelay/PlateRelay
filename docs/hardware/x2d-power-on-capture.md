@@ -196,6 +196,44 @@ DevCap.bambu.com: 1
 
 来源：[Bambu Studio `resources/hms`](https://github.com/bambulab/BambuStudio/tree/master/resources/hms)、[`DeviceErrorDialog.hpp`](https://github.com/bambulab/BambuStudio/blob/master/src/slic3r/GUI/DeviceErrorDialog.hpp)、[论坛：LAN mode system time no NTP](https://forum.bambulab.com/t/lan-mode-system-time-no-ntp/212547)、[论坛：Printer in LAN Mode connects to Internet](https://forum.bambulab.com/t/printer-in-lan-mode-connects-to-internet/139125)。
 
+### 11. 第三次打印：正常完成，全程抓包（2026-11-09 21:09 到 21:47）
+
+用户在本对话里明确要求后，用同一个文件、同样的参数再打一次。U 盘已被用户清空，所以先重新上传（`226`），再下发 `project_file`。PC 同时抓打印机的全部流量（加广播、组播），MQTT 只订阅。
+
+**和第一次对比**：准备阶段的 `stg_cur` 顺序完全一样（29 → 13 → 74 → 11 → 73 → 4 → 8 → 14 → 54 → 1 → 3 → 39 → 51 → 0），准备用了 7 分钟（21:09:21 到 21:16:27），打印 31 分钟，21:47:38 进入 FINISH。全程没有报错，也没有 HMS。
+
+- `ipcam.timelapse` 在 `stg_cur = 0` 之后 20 秒变成 `enable`，FINISH 后 11 秒变回 `disable`。
+- U 盘空间够（开始时 `tl_external_free_kb` 约 12 GB），所以这次没有出现 §8 的「U 盘空间不足」。一次打印下来 `tl_external_free_kb` 少了约 1.18 GB。延时摄影本身只有几 MB，大头是打印机默认开着的连续录像（`ipcam.ipcam_record = enable`，写到 U 盘的 `/ipcam/`）。**派单前要检查 U 盘余量，或者在部署时关掉连续录像**，否则跑几单就会满。
+- 整包推送 3025 条，平均间隔 1.17 秒，最长 2.5 秒。
+
+**抓包结论**：
+- 一条 MQTT 会话 59 分钟传了 69 MB（打印机发往 PC），约 **20 KB/s，每小时约 70 MB**。daemon 按台数估带宽要算上这个，每多一个订阅客户端就再多一份。
+- 打印机在局域网上的非 MQTT 流量只有 SSDP（699 条，约 5 秒一次）和 ARP（118 条）。没有 mDNS、IGMP、LLMNR。
+- FTPS 上传走 990 控制连接，数据连接是被动模式的高位端口（这次是 50057、50084）。daemon 所在机器的防火墙要放行。
+
+### 12. 第四次打印：从 MQTT 发控制命令（2026-11-09 21:54 起）
+
+用户当场同意测试驱动草稿 §11 的第 1（重复下发）、2（用 MQTT 处理报错）、5（延时摄影 / 录像命令）条。命令格式全部照 Bambu Studio `DeviceManager.cpp` 抄，每次只发一条，之后看 15 秒的回执和状态。板上故意留了上一次的打印件。
+
+| 时间 | 发出的命令 | 回执 | 效果 |
+| --- | --- | --- | --- |
+| 21:54:26 | `camera.ipcam_record_set`，`control: disable` | `result: SUCCESS` | `ipcam.ipcam_record` 当场变成 `disable`，连续录像关掉 |
+| 21:54:55 | `camera.ipcam_timelapse`，`control: disable` | `result: FAILURE`，`reason: unsupport common` | 无 |
+| 21:55:09 | `camera.ipcam_timelapse`，`control: enable` | 同上，`FAILURE` | 无 |
+| 21:55:39 | `print.project_file`（同前） | `SUCCESS` | 21:56:16 异物报错暂停，`print_error = 0500806E` |
+| 21:56:37 | `print.clean_print_error`，`subtask_id: "0"`，`print_error: 83918958` | `SUCCESS` | `print_error` 当场归零，**但仍停在 PAUSE** |
+| 21:57:43 | 用户拿走打印件后，`print.resume`，`err: "83918958"`，`param: "reserve"`，`job_id: "0"` | `SUCCESS` | 当场回到 RUNNING，重新走异物检测和后续准备，22:04:44 开始打第一层 |
+| 22:05:06 | 打第一层时重复发同一条 `project_file` | `result: FAIL`，`reason: ERROR STATE` | `print_error` 被置成 `0500_4004`（官方文案：设备忙，无法开始新任务）。**打印不暂停、不受影响**，层数照常增加，但这个值会一直挂在 `print_error` 上 |
+
+结论：
+- **X2D 不支持单独开关延时摄影**（`ipcam_timelapse` 返回 `unsupport common`），只能在下发时用 `project_file` 的 `timelapse` 参数决定。驱动草稿 §11 第 11 条在 X2D 上的答案就是这个。
+- **连续录像可以用命令关掉**，部署时应该关，否则每单吃掉 1 GB 以上的 U 盘空间（§11）。
+- **远程处理报错可行**：`clean_print_error` 只相当于「确认 / 关闭弹窗」（`ACKNOWLEDGE`），不会继续；要继续必须发 `resume`，`err` 填报错码的十进制字符串（和 Studio 一样，`print_error` 已被清零后也照样填原来的码）。`job_id` 局域网下就是 `"0"`。
+- 异物报错时，打印机屏幕上**只有一个「忽略」按钮**（用户反馈）。这和官方 `hms_action_20P.json` 里 `0500806E` 只配了按钮 `21` 对得上，11-08 用户点它后上报的回执是 `print.command = "ignore"`。所以按钮 `21` 在屏幕上就是「忽略并继续」，Bambu Studio 没定义它。我们从 MQTT 发 `resume` 同样能让打印继续，面板可以把「已移走异物，继续」映射到 `resume` 或 `ignore`。
+- **打印机自己会拒绝打印中的重复下发**，不会打断当前任务。但被拒会留下一个 `0500_4004` 的 `print_error`，而状态仍是 RUNNING。driver 要把它识别成「一次被拒的命令」，不能当成打印故障，也不能因为 `print_error ≠ 0` 就把订单标成异常。
+- `0500_4004` **在屏幕上会弹窗**（用户确认），而且**一直挂到打印结束以后**：22:35:53 进入 FINISH 时 `print_error` 仍是 83902468。FINISH 是照常收到的，只是弹窗还没关，`print_error` 就一直留着。用户在 22:42 之后（监听已停）才在屏幕上关掉弹窗，22:43:22 再看时 `print_error` 已经是 0，所以**关掉弹窗会清掉它**。所以「`print_error ≠ 0` 就等于有报错要处理」这个判断在 X2D 上不成立，driver 要按报错码区分，并且在下一次下发前考虑先发 `clean_print_error` 清掉残留。
+- 整单打完（22:35:53 FINISH）。关掉连续录像后，这一单 U 盘只用了约 2 MB（`tl_external_free_kb` 从 11422048 降到 11419936），只剩延时摄影本身。对比 §11 开着录像时的 1.18 GB，确认空间几乎都是连续录像占的。
+
 ## 原始记录
 
 脱敏后的原始报文、抓包摘要和报错照片在 [`x2d-2026-11-08/`](x2d-2026-11-08/README.md)。

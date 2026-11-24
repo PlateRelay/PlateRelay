@@ -436,6 +436,8 @@ Klipper 没有逐报错的选项表，按状态给通用选项（`errorActions: 
 
 ### 6.5 面板侧的处理规则【建议】
 
+> 拓竹全部机型的官方报错，按「下发前可避免、系统可处理、必须人处理、安全告警」的分类见独立的参考文档 [拓竹打印机报错分类](hardware/bambu-error-classification.md)，逐条在 [CSV](hardware/bambu-error-classification.csv)。其他品牌暂不定。
+
 1. **按钮受权限控制**：每个标准动作对应一个权限节点，如 `printer:error:resume`、`printer:error:stop`。例如志愿者能 `ACKNOWLEDGE`、`RESUME`，只有 Builder 能 `STOP`、`IGNORE_PERMANENTLY`。
 2. **`requiresOnSite` 的按钮要二次确认**："我已在现场处理"，并记录是谁。远程直接点"问题已解决，继续"，在喷嘴堵塞、热床温度异常这类报错上是危险的。
 3. **`destructive` 的按钮**：要求选择**失败归因**（机器故障 / 模型问题 / 切片问题），直接写入订单的 `FAILED` 原因，对上订单状态机。
@@ -569,7 +571,7 @@ Fake driver 至少覆盖：正常完成、人工暂停与继续、报错暂停�
 
 ## 11. 第一批真机实测清单（拓竹）
 
-> 2026-11-08 已在 X2D 上测过第 1、2、3、4、7、8、9、10、13、16 条（第 13 条剩余空间除外），以及人工暂停时的字段变化，结果见 [X2D 实测记录](hardware/x2d-power-on-capture.md) §6 到 §9。第 6 条已查清：`hms_action_<序列号前 3 位>.json` 和各语言的 `hms_<语言>_<前缀>.json` 都在 Bambu Studio 仓库的 `resources/hms/` 里，可以离线用（实测记录 §10）。P1 仍未测。
+> 2026-11-08 已在 X2D 上测过第 1、2、3、4、7、8、9、10、13、16 条（第 13 条剩余空间除外），以及人工暂停时的字段变化，结果见 [X2D 实测记录](hardware/x2d-power-on-capture.md) §6 到 §9。第 6 条已查清：`hms_action_<序列号前 3 位>.json` 和各语言的 `hms_<语言>_<前缀>.json` 都在 Bambu Studio 仓库的 `resources/hms/` 里，可以离线用（实测记录 §10）。2026-11-09 又在 X2D 上测了第 5 条的 `resume` 和 `clean_print_error`、第 11 条（`ipcam_timelapse` 不支持，只能随 `project_file` 决定）、打印中重复下发会被拒（`0500_4004`，不打断当前任务），以及用命令关掉连续录像，见实测记录 §12。P1 仍未测。
 
 1. P1 系列在仅局域网 + 开发者模式下，`gcode_state` 实际会出现哪些值，`INIT` 是否会出现。
 2. `RUNNING` 期间 `stg_cur` 是否真的会报加热、调平等准备阶段。
