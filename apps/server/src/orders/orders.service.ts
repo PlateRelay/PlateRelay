@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { type FormField, formAnswerIssue, formFieldProblem } from "@platerelay/shared";
 import { and, asc, desc, eq, gte, ilike, inArray, lt, lte, sql } from "drizzle-orm";
 import { AuditService } from "../audit/audit.service.js";
 import { can, type Ctx, userIdOf } from "../common/ctx.js";
@@ -18,13 +19,7 @@ import { OrderViews, type VersionRow } from "./views.js";
 const UNFINISHED: OrderStatus[] = ["PENDING_REVIEW", "QUEUED", "DISPATCHED", "PRINTING"];
 const SIGNED_URL_SECONDS = 300;
 
-export interface FormField {
-  id: string;
-  label: string;
-  type: "text" | "textarea" | "single" | "multi" | "number";
-  required: boolean;
-  options?: string[];
-}
+export type { FormField };
 
 const plateColumns = (p: StoredPlate, plateCount: number) => ({
   plateIndex: p.index,
@@ -171,6 +166,10 @@ export class OrdersService {
     const current = await this.form();
     if (current.versionId !== basedOnVersionId) throw new Problem(409, "version_conflict", "the form was changed by someone else meanwhile", { currentVersion: current.versionId });
     if (new Set(fields.map((f) => f.id)).size !== fields.length) throw ruleViolation("field ids must be unique");
+    for (const f of fields) {
+      const problem = formFieldProblem(f);
+      if (problem) throw ruleViolation(problem, { field: f.id });
+    }
     await this.db.transaction(async (tx) => {
       await tx.insert(formVersions).values({ fields, createdBy: userIdOf(ctx) });
       await this.audit.record(ctx, { action: "form.save", targetType: "form", before: { fields: current.fields }, after: { fields } }, tx);
@@ -185,11 +184,8 @@ export class OrdersService {
     const out = (form.fields as FormField[]).map((f) => {
       const value = answers.find((a) => a.fieldId === f.id)?.value ?? null;
       const empty = value === null || value === "" || (Array.isArray(value) && !value.length);
-      const ok =
-        empty ||
-        (f.type === "number" ? typeof value === "number" : f.type === "multi" ? Array.isArray(value) && value.every((x) => f.options?.includes(x as string)) : typeof value === "string" && (f.type !== "single" || !!f.options?.includes(value)));
-      if (f.required && empty) issues.push({ path: `/answers/${f.id}`, code: "required" });
-      else if (!ok) issues.push({ path: `/answers/${f.id}`, code: "type" });
+      const issue = formAnswerIssue(f, value);
+      if (issue) issues.push({ path: `/answers/${f.id}`, code: issue });
       return { fieldId: f.id, label: f.label, type: f.type, value: empty ? null : value };
     });
     if (issues.length) throw new Problem(422, "validation_failed", "form answers are incomplete", undefined, issues);

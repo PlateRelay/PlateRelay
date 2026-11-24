@@ -2408,6 +2408,17 @@ export interface components {
             type: components["schemas"]["FormFieldType"];
             required: boolean;
             options?: string[];
+            /** @description 显示在标题下方的说明，Markdown 格式 */
+            description?: string;
+            placeholder?: string;
+            /** @description 文本字段的最少字数（去掉首尾空白后） */
+            minLength?: number;
+            /** @description 文本字段的最多字数 */
+            maxLength?: number;
+            /** @description 数字字段的最小值（含） */
+            min?: number;
+            /** @description 数字字段的最大值（含） */
+            max?: number;
         };
         Form: {
             /** Format: uuid */
