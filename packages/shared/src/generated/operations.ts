@@ -707,7 +707,7 @@ export const operations = {
     ],
     "hasJsonBody": false
   },
-  "createStockRow": {
+  "createCatalogRow": {
     "method": "POST",
     "path": "/catalog",
     "tag": "catalog",
@@ -728,15 +728,6 @@ export const operations = {
   "deleteCatalogRow": {
     "method": "DELETE",
     "path": "/catalog/{rowId}",
-    "tag": "catalog",
-    "permissions": [
-      "filament:catalog"
-    ],
-    "hasJsonBody": true
-  },
-  "setAutoRow": {
-    "method": "PUT",
-    "path": "/catalog/auto/{autoKey}",
     "tag": "catalog",
     "permissions": [
       "filament:catalog"

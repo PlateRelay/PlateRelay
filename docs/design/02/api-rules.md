@@ -81,10 +81,9 @@
 | `getResources` | `GET /resources` | R-SUB-11、R-QUE-04、CFG-SUB-04、CFG-SUB-05 |  |
 | `getTodo` | `GET /todo` |  |  |
 | `getCatalog` | `GET /catalog` |  |  |
-| `createStockRow` | `POST /catalog` | R-SUB-12 |  |
+| `createCatalogRow` | `POST /catalog` | R-SUB-12 |  |
 | `updateCatalogRow` | `PATCH /catalog/{rowId}` |  |  |
 | `deleteCatalogRow` | `DELETE /catalog/{rowId}` |  |  |
-| `setAutoRow` | `PUT /catalog/auto/{autoKey}` |  |  |
 | `setModelBedTypes` | `PUT /catalog/models/{modelId}/bed-types` | R-SUB-11 |  |
 | `listUsers` | `GET /users` |  |  |
 | `updateUser` | `PATCH /users/{userId}` | INV-13、API-AUTH-04、R-ACC-05 |  |

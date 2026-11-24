@@ -4431,11 +4431,12 @@ export const openapiDocument: Record<string, unknown> = {
         }
       },
       "post": {
-        "operationId": "createStockRow",
+        "operationId": "createCatalogRow",
         "tags": [
           "catalog"
         ],
-        "summary": "加库存行",
+        "summary": "手动加一行",
+        "description": "材料、子类型、颜色和已有行重复时返回 409，改已有行的适用机型即可。",
         "x-permission": "filament:catalog",
         "parameters": [
           {
@@ -4517,7 +4518,7 @@ export const openapiDocument: Record<string, unknown> = {
         "tags": [
           "catalog"
         ],
-        "summary": "改库存行或自动行设置",
+        "summary": "改一行（手动添加和打印机录入的行一样改）",
         "x-permission": "filament:catalog",
         "parameters": [
           {
@@ -4609,7 +4610,7 @@ export const openapiDocument: Record<string, unknown> = {
         "tags": [
           "catalog"
         ],
-        "summary": "删库存行",
+        "summary": "删一行。打印机录入的行删掉后，下次有打印机换上这种料时会再加回来",
         "x-permission": "filament:catalog",
         "parameters": [
           {
@@ -4647,81 +4648,6 @@ export const openapiDocument: Record<string, unknown> = {
         "responses": {
           "204": {
             "$ref": "#/components/responses/NoContent"
-          },
-          "default": {
-            "$ref": "#/components/responses/Problem"
-          }
-        }
-      }
-    },
-    "/catalog/auto/{autoKey}": {
-      "put": {
-        "operationId": "setAutoRow",
-        "tags": [
-          "catalog"
-        ],
-        "summary": "设置某个自动行（隐藏、排序、备注）",
-        "x-permission": "filament:catalog",
-        "description": "第一次设置时 version 传 null。",
-        "parameters": [
-          {
-            "name": "autoKey",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "$ref": "#/components/parameters/IdempotencyKey"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "version": {
-                    "type": [
-                      "integer",
-                      "null"
-                    ]
-                  },
-                  "hidden": {
-                    "type": "boolean"
-                  },
-                  "sort": {
-                    "type": "integer"
-                  },
-                  "note": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  }
-                },
-                "required": [
-                  "version",
-                  "hidden",
-                  "sort"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CatalogRow"
-                }
-              }
-            }
           },
           "default": {
             "$ref": "#/components/responses/Problem"
@@ -8129,24 +8055,16 @@ export const openapiDocument: Record<string, unknown> = {
         "type": "object",
         "properties": {
           "id": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "format": "uuid"
           },
-          "source": {
+          "origin": {
             "type": "string",
             "enum": [
-              "AUTO",
-              "STOCK"
-            ]
-          },
-          "autoKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+              "MANUAL",
+              "PRINTER"
+            ],
+            "description": "手动添加 / 打印机换料时自动加入。只说明来源"
           },
           "modelIds": {
             "type": "array",
@@ -8174,7 +8092,7 @@ export const openapiDocument: Record<string, unknown> = {
           },
           "loaded": {
             "type": "boolean",
-            "description": "已装上 / 需要换料"
+            "description": "已装上 / 需要换料。按开放给选手的打印机当前料位现算，只用于显示"
           },
           "hidden": {
             "type": "boolean"
@@ -8189,16 +8107,12 @@ export const openapiDocument: Record<string, unknown> = {
             ]
           },
           "version": {
-            "type": [
-              "integer",
-              "null"
-            ]
+            "type": "integer"
           }
         },
         "required": [
           "id",
-          "source",
-          "autoKey",
+          "origin",
           "modelIds",
           "material",
           "subType",
