@@ -93,7 +93,7 @@
 | E-AUD | `audit_log` | 审计日志 |
 | E-SET | `settings` | 系统设置，每个分区一行 |
 | E-FORM | `form_versions` | 申请表单的版本 |
-| E-CAT | `filament_catalog` | 耗材目录的库存行和自动行设置 |
+| E-CAT | `filament_catalog` | 耗材目录的每一行（手动添加或打印机录入） |
 | E-BED | `model_bed_types` | 打印板目录：每个机型本场能用的板型 |
 | E-NTF | `notifications` | 站内通知 |
 | E-NDLV | `notification_deliveries` | 邮件、飞书的投递记录 |
@@ -465,14 +465,15 @@
 | 列 | 说明 |
 | --- | --- |
 | `id` | |
-| `source` | `STOCK`（库存行）/ `AUTO`（对自动行的设置） |
-| `auto_key?` | `AUTO` 行对应哪种自动行：`model_id + material + colour`，唯一 |
-| `model_ids` | text[]，库存行适用的机型；空 = 全部 |
-| `material`、`sub_type?`、`colour`（#RRGGBB）、`colour_name?` | 库存行的内容 |
-| `hidden`、`sort`、`note?` | 两种行都能设 |
+| `origin` | `MANUAL`（手动添加）/ `PRINTER`（打印机录入，文档 1 R-SUB-16）。只说明来源，两种行的管法完全一样 |
+| `model_ids` | text[]，适用的机型；空 = 全部 |
+| `material`、`sub_type?`、`colour`（#RRGGBB）、`colour_name?` | 行的内容 |
+| `hidden`、`sort`、`note?` | |
 | `version` | E-GEN-04 |
 
-自动行本身不存：每次从开放给选手的打印机当前料位算出来（Q116），再套上这里的 `AUTO` 设置。
+`(material, coalesce(sub_type, ''), colour)` 唯一：手动加一行和已有行重复时返回 409，改已有行的适用机型即可；自动加入按这个键找行（R-SUB-16）。
+
+目录就是这张表，提交校验（R-SUB-06、R-SUB-07）只读这张表的未隐藏行。"已装上 / 需要换料"不存，返回时按开放给选手的打印机当前料位现算（R-SUB-11、Q499）。不存数量、位置、最后出现时间，以后做库存管理时按 `id` 关联（Q501）。
 
 ### E-BED `model_bed_types`
 
