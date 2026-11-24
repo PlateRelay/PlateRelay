@@ -1297,8 +1297,11 @@ export interface paths {
         /** 耗材目录（含隐藏的） */
         get: operations["getCatalog"];
         put?: never;
-        /** 加库存行 */
-        post: operations["createStockRow"];
+        /**
+         * 手动加一行
+         * @description 材料、子类型、颜色和已有行重复时返回 409，改已有行的适用机型即可。
+         */
+        post: operations["createCatalogRow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1315,32 +1318,12 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** 删库存行 */
+        /** 删一行。打印机录入的行删掉后，下次有打印机换上这种料时会再加回来 */
         delete: operations["deleteCatalogRow"];
         options?: never;
         head?: never;
-        /** 改库存行或自动行设置 */
+        /** 改一行（手动添加和打印机录入的行一样改） */
         patch: operations["updateCatalogRow"];
-        trace?: never;
-    };
-    "/catalog/auto/{autoKey}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * 设置某个自动行（隐藏、排序、备注）
-         * @description 第一次设置时 version 传 null。
-         */
-        put: operations["setAutoRow"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/catalog/models/{modelId}/bed-types": {
@@ -2274,21 +2257,23 @@ export interface components {
         };
         CatalogRow: {
             /** Format: uuid */
-            id: string | null;
-            /** @enum {string} */
-            source: "AUTO" | "STOCK";
-            autoKey: string | null;
+            id: string;
+            /**
+             * @description 手动添加 / 打印机换料时自动加入。只说明来源
+             * @enum {string}
+             */
+            origin: "MANUAL" | "PRINTER";
             modelIds: string[];
             material: string;
             subType: string | null;
             colour: string;
             colourName: string | null;
-            /** @description 已装上 / 需要换料 */
+            /** @description 已装上 / 需要换料。按开放给选手的打印机当前料位现算，只用于显示 */
             loaded: boolean;
             hidden: boolean;
             sort: number;
             note: string | null;
-            version: number | null;
+            version: number;
         };
         Resources: {
             printers: {
@@ -4864,7 +4849,7 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
-    createStockRow: {
+    createCatalogRow: {
         parameters: {
             query?: never;
             header: {
@@ -4947,41 +4932,6 @@ export interface operations {
                     colourName?: string | null;
                     hidden?: boolean;
                     sort?: number;
-                    note?: string | null;
-                };
-            };
-        };
-        responses: {
-            /** @description 成功 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CatalogRow"];
-                };
-            };
-            default: components["responses"]["Problem"];
-        };
-    };
-    setAutoRow: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description 幂等键，客户端生成，一次用户意图一个；网络重试和连点都用同一个 */
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-            };
-            path: {
-                autoKey: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    version: number | null;
-                    hidden: boolean;
-                    sort: number;
                     note?: string | null;
                 };
             };
