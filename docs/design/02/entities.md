@@ -161,7 +161,7 @@
 | `daemon_version` | text | |
 | `platform` | text | `linux` / `windows` / `docker`（F-DMN-06） |
 | `last_seen_at` | timestamptz? | |
-| `revoked_at` | timestamptz? | 吊销后拒绝连接；它名下的打印机挂联系不上（S-RSN-OFFLINE） |
+| `revoked_at` | timestamptz? | 吊销后拒绝连接；它名下的打印机挂离线（S-RSN-OFFLINE） |
 | `key_alert_at` | timestamptz? | 疑似私钥泄露告警的时间（R-OPS-02，Q238）：10 分钟内被不同 IP 顶掉 3 次及以上时记下；管理员确认或吊销后清空。被顶掉的记录（时间、新旧 IP）写审计 |
 | `created_by` | uuid | |
 | `created_at` | timestamptz | |
@@ -186,7 +186,7 @@
 | `model_id` | text? | 打印机上报，不手填 |
 | `model_name` | text? | 打印机上报 |
 | `capabilities` | jsonb | 适配器的能力声明和静态命令清单（IF-ADP-02），连上时更新 |
-| `open_to_applicants` | bool | 开放给选手，新加的默认关 |
+| `open_to_applicants` | bool | 开放给申请者，新加的默认关 |
 | `state` | printer_state | 由 E-PRSN 有没有行、当前任务和打印机上报一起决定，转换只有文档 1 S-PRN-T20–T26；因任务进出工作、待清板只能经打印任务映射表改（文档 1 §4A） |
 | `state_since` | timestamptz | |
 | `current_job_id` | uuid? | 当前系统任务；`CLEARING_REQUIRED` 时指向刚结束的那个；`ATTENTION` 时可能有（任务照常推进） |
@@ -218,7 +218,7 @@
 
 ### E-PEVT `printer_events`
 
-只追加。`id`、`printer_id`、`job_id?`、`kind`（`printer_event_kind`）、`at`（打印机或 daemon 报的时间）、`data jsonb`（暂停原因、HMS 代码和等级、续料的前后槽位等）。打印机详情的事件日志读这张表（R-PRT-26）；人在面板上的操作照常记 E-AUD，不重复记这里。保留期和订单记录一样永久（E-GEN-10 的触发器同样适用）。
+只追加。`id`、`printer_id`、`job_id?`、`kind`（`printer_event_kind`）、`at`（打印机或 daemon 报的时间）、`data jsonb`（暂停原因、HMS 代码和等级、续料的前后料位等）。打印机详情的事件日志读这张表（R-PRT-26）；人在面板上的操作照常记 E-AUD，不重复记这里。保留期和订单记录一样永久（E-GEN-10 的触发器同样适用）。
 
 ### E-TRAY `tray_grams`
 
@@ -282,7 +282,7 @@
 | `number` | bigint | 给人看的编号，全局递增，`#1234`；归档也不重置，不复用 |
 | `owner_id` | uuid | |
 | `status` | order_status | 存在订单上，不在读取时推算；已派单、打印中、失败、待入库只能经打印任务映射表改（文档 1 §4A） |
-| `sort_key` | bigint? | 排序值（INV-10）。第一次审核通过时分配（R-REV-01）；离开队列也保留，重打、开打前停止、下发失败都用它回原位 |
+| `sort_key` | bigint? | 排序值（INV-10）。第一次审核通过时分配（R-REV-01）；离开队列也保留，重打、开打前停止、文件下发失败都用它回原位 |
 | `active_version_id` | uuid | 会被打印的版本 |
 | `pending_version_id` | uuid? | 等重审的版本；只在 `PENDING_REVIEW` 且 `sort_key` 不为空时有值 |
 | `colour_pref` | colour_pref | |
@@ -299,7 +299,7 @@
 | `submitted_at` | timestamptz | |
 | `closed_at` | timestamptz? | 进终态或进失败的时间；文件保留期从这里算（R-FIL-01、R-FIL-02）。重打时清空 |
 | `archived_at` | timestamptz? | 归档本期时留在失败的订单记下归档时间；有值就不能重打（R-ARC-02、R-PRT-09） |
-| `reprint_declined_at`、`reprint_declined_by`、`reprint_declined_reason` | timestamptz?、uuid?、text? | 现场人员点了"不重打，请选手重新提交"（R-PRT-18，Q224）。有值时不能重打、不进现场人员待办；管理员撤销时三列一起清空（R-PRT-19）。只在失败时有值 |
+| `reprint_declined_at`、`reprint_declined_by`、`reprint_declined_reason` | timestamptz?、uuid?、text? | 现场人员点了"不重打，请申请者重新提交"（R-PRT-18，Q224）。有值时不能重打、不进现场人员待办；管理员撤销时三列一起清空（R-PRT-19）。只在失败时有值 |
 | `files_expire_at` | timestamptz? | 订单进终态或进失败时按当时的 CFG-FIL-01 算好存下（`closed_at` + 保留天数），之后改参数不影响已经算好的（P-04，Q324）；重打时清空。过了这个时间，这张订单的文件就过期，不能下载、不能重打（R-FIL-01、R-FIL-02、R-PRT-10）。文件对象是否真删看 E-FILE（Q314） |
 
 约束：
@@ -336,7 +336,7 @@
 
 ### E-JOB `print_jobs`
 
-派单是动作，打印任务是它产生的东西（Q218）：一次派单新建一个任务 = 把某个版本发到某台打印机的一次尝试。重打、开打前停止或下发失败后再派，都是新的一行，旧的留着。打印机事件先落到当前任务上，任务的阶段变化按文档 1 §4A.2 的映射表在同一个事务里推动订单和打印机；订单和打印机的那几个状态不能绕过映射表直接写。
+派单是动作，打印任务是它产生的东西（Q218）：一次派单新建一个任务 = 把某个版本发到某台打印机的一次尝试。重打、开打前停止或文件下发失败后再派，都是新的一行，旧的留着。打印机事件先落到当前任务上，任务的阶段变化按文档 1 §4A.2 的映射表在同一个事务里推动订单和打印机；订单和打印机的那几个状态不能绕过映射表直接写。
 
 | 列 | 说明 |
 | --- | --- |
@@ -360,7 +360,7 @@
 | `pause_reason?` | `pause_reason`，`phase = PAUSED` 时有值（R-PRT-03） |
 | `paused_ms` | 暂停累计 |
 | `skipped_parts` | int[]，已跳过的零件 ID，以打印机上报为准（R-SKP-04）；重打是新任务，从空开始（R-SKP-07） |
-| `end_photo_key?`、`end_photo_at?` | 结束照片（R-CAM-11）：打完、失败或停止时拍的一张，永久保留 |
+| `end_photo_key?`、`end_photo_at?` | 结束照片（R-CAM-11）：打印完成、失败或停止时拍的一张，永久保留 |
 | `fail_reason?` | 失败原因：停止时选的原因，或打印机报的原因 |
 
 约束：`phase = 'ENDED'` ⇔ `outcome` 不为空。
@@ -432,7 +432,7 @@
 | `from_status?`、`to_status?` | 状态变化时有 |
 | `version_n?`、`job_id?` | |
 | `note?` | 备注 |
-| `note_visible` | 选手可见（R-NTE-03，默认值按动作） |
+| `note_visible` | 申请者可见（R-NTE-03，默认值按动作） |
 | `data` | jsonb，显示文案要用的参数（后退几位、跳过哪些零件……） |
 
 ### E-TL `timelapses`
@@ -472,7 +472,7 @@
 | `hidden`、`sort`、`note?` | 两种行都能设 |
 | `version` | E-GEN-04 |
 
-自动行本身不存：每次从开放给选手的打印机当前料位算出来（Q116），再套上这里的 `AUTO` 设置。
+自动行本身不存：每次从开放给申请者的打印机当前料位算出来（Q116），再套上这里的 `AUTO` 设置。
 
 ### E-BED `model_bed_types`
 
@@ -532,4 +532,4 @@
 | E-MIG-05 | 改名 = expand 新列 + 双写 + 回填 + 下一版 contract 旧列；不直接 `RENAME`。 |
 | E-MIG-06 | 迁移前自动备份数据库，备份成功才迁移（F-OPS-03）。回滚 = 装回上一版程序；因为只有 expand，上一版能直接在新 schema 上跑，不需要反向迁移。 |
 | E-MIG-07 | 触发器、检查约束、部分唯一索引（INV-02、INV-04、INV-06）写在迁移里，CI 用真 PostgreSQL 跑迁移和这些约束的测试。 |
-| E-MIG-08 | 恢复备份用命令行（F-OPS-03）。恢复完、面板启动前，同一个命令里：所有打印机挂联系不上（S-RSN-OFFLINE）；所有没做完的 E-CMD（`QUEUED` `SENT` `ACCEPTED`）改为 `EXPIRED`，永不重发；记下"恢复到的时间"，管理员看到横幅；对象存储里没有 E-FILE 记录的文件交给没提交上传的清理（CFG-SUB-07）（R-OPS-01，Q237）。 |
+| E-MIG-08 | 恢复备份用命令行（F-OPS-03）。恢复完、面板启动前，同一个命令里：所有打印机挂离线（S-RSN-OFFLINE）；所有没做完的 E-CMD（`QUEUED` `SENT` `ACCEPTED`）改为 `EXPIRED`，永不重发；记下"恢复到的时间"，管理员看到横幅；对象存储里没有 E-FILE 记录的文件交给没提交上传的清理（CFG-SUB-07）（R-OPS-01，Q237）。 |

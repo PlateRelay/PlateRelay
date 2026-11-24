@@ -23,14 +23,14 @@ export const PERMISSIONS = [
   "order:skip-parts:any",
   /** 派单、确认映射。 */
   "order:dispatch",
-  /** 重打；不重打、请选手重新提交。 */
+  /** 重打；不重打、请申请者重新提交。 */
   "order:reprint",
   /** 撤销"不重打"。 */
   "order:reprint:restore",
   /** 铲件入库、确认清板。 */
   "order:store",
   "order:redeem",
-  /** 进打印机详情、看报错和事件日志、处理报错、人工判定、放出异常的打印机。 */
+  /** 进打印机详情、看报错和事件日志、处理报错、人工裁定、放出异常的打印机。 */
   "printer:operate",
   "printer:stop",
   /** 手动刷新机器状态。 */
@@ -39,7 +39,7 @@ export const PERMISSIONS = [
   "printer:control",
   /** 挂上或去掉"维护"。 */
   "printer:maintenance",
-  /** 编辑耗材目录、改槽位克数。 */
+  /** 编辑耗材目录、改料位克数。 */
   "filament:catalog",
   "order:review",
   /** 拖拽调整排队顺序。 */
@@ -49,7 +49,7 @@ export const PERMISSIONS = [
   "order:dispose",
   /** 添加、编辑、停用、删除打印机。 */
   "printer:manage",
-  /** 开放给选手开关、映射规则。 */
+  /** 开放给申请者开关、映射规则。 */
   "resource:configure",
   "form:configure",
   "user:manage",

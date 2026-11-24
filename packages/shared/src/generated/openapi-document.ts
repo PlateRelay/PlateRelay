@@ -1178,7 +1178,7 @@ export const openapiDocument: Record<string, unknown> = {
           "order:submit",
           "order:view:any"
         ],
-        "description": "按时间正序。申请者只收到选手可见的备注。",
+        "description": "按时间正序。申请者只收到申请者可见的备注。",
         "parameters": [
           {
             "$ref": "#/components/parameters/OrderId"
@@ -1684,7 +1684,7 @@ export const openapiDocument: Record<string, unknown> = {
           "order:cancel:own",
           "order:cancel:any"
         ],
-        "description": "只有待审核、排队中能取消。已派单返回 422 order_dispatched（请现场人员先停止）；打印中、失败、打完的单返回 422 order_started。",
+        "description": "只有待审核、排队中能取消。已派单返回 422 order_dispatched（请现场人员先停止）；打印中、失败、打印完成的单返回 422 order_started。",
         "parameters": [
           {
             "$ref": "#/components/parameters/OrderId"
@@ -1809,9 +1809,9 @@ export const openapiDocument: Record<string, unknown> = {
         "tags": [
           "orders"
         ],
-        "summary": "不重打，请选手重新提交",
+        "summary": "不重打，请申请者重新提交",
         "x-permission": "order:reprint",
-        "description": "只用于选手模型本身的问题。订单仍是失败，记下不重打，重打按钮隐藏，移出现场人员待办，通知申请者并带原因。时间线记 reprint.declined，挂在打印节点下，原因默认选手可见。归档过或已经标过返回 409 state_conflict。",
+        "description": "只用于申请者模型本身的问题。订单仍是失败，记下不重打，重打按钮隐藏，移出现场人员待办，通知申请者并带原因。时间线记 reprint.declined，挂在打印节点下，原因默认申请者可见。归档过或已经标过返回 409 state_conflict。",
         "parameters": [
           {
             "$ref": "#/components/parameters/OrderId"
@@ -1907,9 +1907,9 @@ export const openapiDocument: Record<string, unknown> = {
         "tags": [
           "orders"
         ],
-        "summary": "人工判定：判失败、判打完或判没开打",
+        "summary": "人工裁定：失败、打印完成或没开打",
         "x-permission": "printer:operate",
-        "description": "只在这个任务的打印机挂着 JUDGE 原因时可用（对账分不清任务结局，或开打指令可能没到），否则 409 state_conflict；放出异常打印机时的判定走 releasePrinter。打印机上报这个任务正在运行时不能判，返回 409 state_conflict。判没开打（NOT_STARTED）：任务以 STOPPED_BEFORE_START 结束，订单回排队原位，打印机进待清板，面板给 daemon 发 job.stop 让它记下不再开打。",
+        "description": "只在这个任务的打印机挂着 JUDGE 原因时可用（对账分不清任务结局，或开打指令可能没到），否则 409 state_conflict；放出异常打印机时的裁定走 releasePrinter。打印机上报这个任务正在运行时不能判，返回 409 state_conflict。裁定没开打（NOT_STARTED）：任务以 STOPPED_BEFORE_START 结束，订单回排队原位，打印机进待清板，面板给 daemon 发 job.stop 让它记下不再开打。",
         "parameters": [
           {
             "$ref": "#/components/parameters/OrderId"
@@ -1986,7 +1986,7 @@ export const openapiDocument: Record<string, unknown> = {
           "order:skip-parts:own",
           "order:skip-parts:any"
         ],
-        "description": "只在任务打印中或暂停中可用（准备中 409 state_conflict）；跳完至少剩一个没跳的零件，否则 422 skip_all_parts（全跳等于停止，申请者不能停止打印）。不能撤回，前端先二次确认。是控制命令，没有命令锁。已跳过列表以打印机上报为准写进打印任务的 skipped_parts；时间线打印节点记 parts.skipped，默认选手可见，现场人员只显示角色。",
+        "description": "只在任务打印中或暂停中可用（准备中 409 state_conflict）；跳完至少剩一个没跳的零件，否则 422 skip_all_parts（全跳等于停止，申请者不能停止打印）。不能撤回，前端先二次确认。是控制命令，没有命令锁。已跳过列表以打印机上报为准写进打印任务的 skipped_parts；时间线打印节点记 parts.skipped，默认申请者可见，现场人员只显示角色。",
         "parameters": [
           {
             "$ref": "#/components/parameters/OrderId"
@@ -2578,7 +2578,7 @@ export const openapiDocument: Record<string, unknown> = {
         ],
         "summary": "添加打印机",
         "x-permission": "printer:manage",
-        "description": "新加的默认不开放给选手。",
+        "description": "新加的默认不开放给申请者。",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
@@ -2796,7 +2796,7 @@ export const openapiDocument: Record<string, unknown> = {
         "tags": [
           "printers"
         ],
-        "summary": "开放给选手",
+        "summary": "开放给申请者",
         "x-permission": "resource:configure",
         "parameters": [
           {
@@ -2852,7 +2852,7 @@ export const openapiDocument: Record<string, unknown> = {
         "tags": [
           "printers"
         ],
-        "summary": "改槽位剩余克数",
+        "summary": "改料位剩余克数",
         "description": "人改过即去掉\"待确认\"；记审计，不写回打印机。RFID 卷也可以改",
         "x-permission": "filament:catalog",
         "parameters": [
@@ -3092,7 +3092,7 @@ export const openapiDocument: Record<string, unknown> = {
         ],
         "summary": "停止打印",
         "x-permission": "printer:stop",
-        "description": "前端先让人选原因并二次确认。任务在传文件（daemon 中止传输并确认没开打）、准备中、打印中、暂停中都发 job.stop，没有命令锁；打印机还报打印中或暂停中时可以再点。打印机报告没开打就停下 → 订单回原位；开打后停下 → 失败。\"开打可能没到\"待办里的\"停止并退回队列\"也是调这个接口：订单只在打印机报已停止 / 已取消，或 daemon 确认没开打后才回原位；daemon 确认不了时打印机挂 JUDGE，由人判。",
+        "description": "前端先让人选原因并二次确认。任务在传文件（daemon 中止传输并确认没开打）、准备中、打印中、暂停中都发 job.stop，没有命令锁；打印机还报打印中或暂停中时可以再点。打印机报告没开打就停下 → 订单回原位；开打后停下 → 失败。\"开打可能没到\"待办里的\"停止并退回队列\"也是调这个接口：订单只在打印机报已停止 / 已取消，或 daemon 确认没开打后才回原位；daemon 确认不了时打印机挂 JUDGE，由人工裁定。",
         "parameters": [
           {
             "$ref": "#/components/parameters/PrinterId"
@@ -3394,7 +3394,7 @@ export const openapiDocument: Record<string, unknown> = {
         ],
         "summary": "放出异常的打印机",
         "x-permission": "printer:operate",
-        "description": "去掉这台打印机除 OFFLINE 以外的全部异常原因，没有别的原因就进待清板；还联系不上的留在异常，重连后再进待清板。打印机连着且最新上报正在运行时返回 409 state_conflict；挂着 OFFLINE 时不看旧上报。有当前任务时必须带 expectedJobId 和 outcome，没有时两者都不带，否则 422。判没开打时给 daemon 发 job.stop。写审计。",
+        "description": "去掉这台打印机除 OFFLINE 以外的全部异常原因，没有别的原因就进待清板；还离线的留在异常，重连后再进待清板。打印机连着且最新上报正在运行时返回 409 state_conflict；挂着 OFFLINE 时不看旧上报。有当前任务时必须带 expectedJobId 和 outcome，没有时两者都不带，否则 422。裁定没开打时给 daemon 发 job.stop。写审计。",
         "parameters": [
           {
             "$ref": "#/components/parameters/PrinterId"
@@ -3435,7 +3435,7 @@ export const openapiDocument: Record<string, unknown> = {
                       "NOT_STARTED",
                       null
                     ],
-                    "description": "当前任务的判定"
+                    "description": "当前任务的裁定"
                   },
                   "reason": {
                     "type": "string",
@@ -5194,7 +5194,7 @@ export const openapiDocument: Record<string, unknown> = {
         ],
         "summary": "吊销",
         "x-permission": "daemon:manage",
-        "description": "立刻断开它的连接；它名下的打印机异常(联系不上)，要管理员移到别的 daemon。",
+        "description": "立刻断开它的连接；它名下的打印机异常(离线)，要管理员移到别的 daemon。",
         "parameters": [
           {
             "name": "daemonId",
@@ -7161,7 +7161,7 @@ export const openapiDocument: Record<string, unknown> = {
           },
           "remainingGrams": {
             "type": "integer",
-            "description": "面板记的槽位克数，不是打印机估的余量"
+            "description": "面板记的料位克数，不是打印机估的余量"
           },
           "gramsUnconfirmed": {
             "type": "boolean",
@@ -7610,7 +7610,7 @@ export const openapiDocument: Record<string, unknown> = {
               },
               "fileName": {
                 "type": "string",
-                "description": "x-requires: overview:filename:view（访客看「访客可看打印中的文件名」设置）。本系统派的任务 = 选手上传时的原文件名，不是打印机上的 pr-<jobRef 后 12 位> 文件名；external 为 true 时是打印机上报的文件名，只给 order:view:any"
+                "description": "x-requires: overview:filename:view（访客看「访客可看打印中的文件名」设置）。本系统派的任务 = 申请者上传时的原文件名，不是打印机上的 pr-<jobRef 后 12 位> 文件名；external 为 true 时是打印机上报的文件名，只给 order:view:any"
               },
               "external": {
                 "type": "boolean"
@@ -8110,7 +8110,7 @@ export const openapiDocument: Record<string, unknown> = {
                   "null"
                 ],
                 "format": "date-time",
-                "description": "x-requires: settings:manage。数据恢复到的时间，有值时管理员看到横幅\"数据已恢复到 <时间>，之后提交的订单需要选手重新提交\""
+                "description": "x-requires: settings:manage。数据恢复到的时间，有值时管理员看到横幅\"数据已恢复到 <时间>，之后提交的订单需要申请者重新提交\""
               }
             },
             "required": [
