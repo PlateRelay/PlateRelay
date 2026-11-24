@@ -2852,7 +2852,7 @@ export const openapiDocument: Record<string, unknown> = {
         "tags": [
           "printers"
         ],
-        "summary": "改槽位剩余克数",
+        "summary": "改料位剩余克数",
         "description": "人改过即去掉\"待确认\"；记审计，不写回打印机。RFID 卷也可以改",
         "x-permission": "filament:catalog",
         "parameters": [
@@ -7161,7 +7161,7 @@ export const openapiDocument: Record<string, unknown> = {
           },
           "remainingGrams": {
             "type": "integer",
-            "description": "面板记的槽位克数，不是打印机估的余量"
+            "description": "面板记的料位克数，不是打印机估的余量"
           },
           "gramsUnconfirmed": {
             "type": "boolean",

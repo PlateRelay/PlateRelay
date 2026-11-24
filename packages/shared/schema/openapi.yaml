@@ -1313,7 +1313,7 @@ paths:
     put:
       operationId: setTrayGrams
       tags: [printers]
-      summary: 改槽位剩余克数
+      summary: 改料位剩余克数
       description: 人改过即去掉"待确认"；记审计，不写回打印机。RFID 卷也可以改
       x-permission: filament:catalog
       parameters:
@@ -3075,7 +3075,7 @@ components:
         material: {type: [string, 'null']}
         subType: {type: [string, 'null']}
         colour: {type: [string, 'null']}
-        remainingGrams: {type: integer, description: 面板记的槽位克数，不是打印机估的余量}
+        remainingGrams: {type: integer, description: 面板记的料位克数，不是打印机估的余量}
         gramsUnconfirmed: {type: boolean, description: 换料后重置为默认净重、还没人确认}
         rfid: {type: boolean, description: 料位信息是否来自 RFID 识别；RFID 料位只能查看，不能改}
         serial: {type: [string, 'null'], description: RFID 耗材卷的序列号（拓竹 `tray_uuid`），只读显示；非 RFID 料位为 null}

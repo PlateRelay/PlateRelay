@@ -862,7 +862,7 @@ export interface paths {
         };
         get?: never;
         /**
-         * 改槽位剩余克数
+         * 改料位剩余克数
          * @description 人改过即去掉"待确认"；记审计，不写回打印机。RFID 卷也可以改
          */
         put: operations["setTrayGrams"];
@@ -2029,7 +2029,7 @@ export interface components {
             material?: string | null;
             subType?: string | null;
             colour?: string | null;
-            /** @description 面板记的槽位克数，不是打印机估的余量 */
+            /** @description 面板记的料位克数，不是打印机估的余量 */
             remainingGrams: number;
             /** @description 换料后重置为默认净重、还没人确认 */
             gramsUnconfirmed: boolean;

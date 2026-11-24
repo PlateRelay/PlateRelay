@@ -218,7 +218,7 @@
 
 ### E-PEVT `printer_events`
 
-只追加。`id`、`printer_id`、`job_id?`、`kind`（`printer_event_kind`）、`at`（打印机或 daemon 报的时间）、`data jsonb`（暂停原因、HMS 代码和等级、续料的前后槽位等）。打印机详情的事件日志读这张表（R-PRT-26）；人在面板上的操作照常记 E-AUD，不重复记这里。保留期和订单记录一样永久（E-GEN-10 的触发器同样适用）。
+只追加。`id`、`printer_id`、`job_id?`、`kind`（`printer_event_kind`）、`at`（打印机或 daemon 报的时间）、`data jsonb`（暂停原因、HMS 代码和等级、续料的前后料位等）。打印机详情的事件日志读这张表（R-PRT-26）；人在面板上的操作照常记 E-AUD，不重复记这里。保留期和订单记录一样永久（E-GEN-10 的触发器同样适用）。
 
 ### E-TRAY `tray_grams`
 

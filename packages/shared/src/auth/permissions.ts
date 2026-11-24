@@ -39,7 +39,7 @@ export const PERMISSIONS = [
   "printer:control",
   /** 挂上或去掉"维护"。 */
   "printer:maintenance",
-  /** 编辑耗材目录、改槽位克数。 */
+  /** 编辑耗材目录、改料位克数。 */
   "filament:catalog",
   "order:review",
   /** 拖拽调整排队顺序。 */
