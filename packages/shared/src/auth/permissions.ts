@@ -23,7 +23,7 @@ export const PERMISSIONS = [
   "order:skip-parts:any",
   /** 派单、确认映射。 */
   "order:dispatch",
-  /** 重打；不重打、请选手重新提交。 */
+  /** 重打；不重打、请申请者重新提交。 */
   "order:reprint",
   /** 撤销"不重打"。 */
   "order:reprint:restore",
@@ -49,7 +49,7 @@ export const PERMISSIONS = [
   "order:dispose",
   /** 添加、编辑、停用、删除打印机。 */
   "printer:manage",
-  /** 开放给选手开关、映射规则。 */
+  /** 开放给申请者开关、映射规则。 */
   "resource:configure",
   "form:configure",
   "user:manage",

@@ -186,7 +186,7 @@
 | `model_id` | text? | 打印机上报，不手填 |
 | `model_name` | text? | 打印机上报 |
 | `capabilities` | jsonb | 适配器的能力声明和静态命令清单（IF-ADP-02），连上时更新 |
-| `open_to_applicants` | bool | 开放给选手，新加的默认关 |
+| `open_to_applicants` | bool | 开放给申请者，新加的默认关 |
 | `state` | printer_state | 由 E-PRSN 有没有行、当前任务和打印机上报一起决定，转换只有文档 1 S-PRN-T20–T26；因任务进出工作、待清板只能经打印任务映射表改（文档 1 §4A） |
 | `state_since` | timestamptz | |
 | `current_job_id` | uuid? | 当前系统任务；`CLEARING_REQUIRED` 时指向刚结束的那个；`ATTENTION` 时可能有（任务照常推进） |
@@ -299,7 +299,7 @@
 | `submitted_at` | timestamptz | |
 | `closed_at` | timestamptz? | 进终态或进失败的时间；文件保留期从这里算（R-FIL-01、R-FIL-02）。重打时清空 |
 | `archived_at` | timestamptz? | 归档本期时留在失败的订单记下归档时间；有值就不能重打（R-ARC-02、R-PRT-09） |
-| `reprint_declined_at`、`reprint_declined_by`、`reprint_declined_reason` | timestamptz?、uuid?、text? | 现场人员点了"不重打，请选手重新提交"（R-PRT-18，Q224）。有值时不能重打、不进现场人员待办；管理员撤销时三列一起清空（R-PRT-19）。只在失败时有值 |
+| `reprint_declined_at`、`reprint_declined_by`、`reprint_declined_reason` | timestamptz?、uuid?、text? | 现场人员点了"不重打，请申请者重新提交"（R-PRT-18，Q224）。有值时不能重打、不进现场人员待办；管理员撤销时三列一起清空（R-PRT-19）。只在失败时有值 |
 | `files_expire_at` | timestamptz? | 订单进终态或进失败时按当时的 CFG-FIL-01 算好存下（`closed_at` + 保留天数），之后改参数不影响已经算好的（P-04，Q324）；重打时清空。过了这个时间，这张订单的文件就过期，不能下载、不能重打（R-FIL-01、R-FIL-02、R-PRT-10）。文件对象是否真删看 E-FILE（Q314） |
 
 约束：
@@ -360,7 +360,7 @@
 | `pause_reason?` | `pause_reason`，`phase = PAUSED` 时有值（R-PRT-03） |
 | `paused_ms` | 暂停累计 |
 | `skipped_parts` | int[]，已跳过的零件 ID，以打印机上报为准（R-SKP-04）；重打是新任务，从空开始（R-SKP-07） |
-| `end_photo_key?`、`end_photo_at?` | 结束照片（R-CAM-11）：打完、失败或停止时拍的一张，永久保留 |
+| `end_photo_key?`、`end_photo_at?` | 结束照片（R-CAM-11）：打印完成、失败或停止时拍的一张，永久保留 |
 | `fail_reason?` | 失败原因：停止时选的原因，或打印机报的原因 |
 
 约束：`phase = 'ENDED'` ⇔ `outcome` 不为空。
@@ -432,7 +432,7 @@
 | `from_status?`、`to_status?` | 状态变化时有 |
 | `version_n?`、`job_id?` | |
 | `note?` | 备注 |
-| `note_visible` | 选手可见（R-NTE-03，默认值按动作） |
+| `note_visible` | 申请者可见（R-NTE-03，默认值按动作） |
 | `data` | jsonb，显示文案要用的参数（后退几位、跳过哪些零件……） |
 
 ### E-TL `timelapses`
@@ -472,7 +472,7 @@
 | `hidden`、`sort`、`note?` | 两种行都能设 |
 | `version` | E-GEN-04 |
 
-自动行本身不存：每次从开放给选手的打印机当前料位算出来（Q116），再套上这里的 `AUTO` 设置。
+自动行本身不存：每次从开放给申请者的打印机当前料位算出来（Q116），再套上这里的 `AUTO` 设置。
 
 ### E-BED `model_bed_types`
 

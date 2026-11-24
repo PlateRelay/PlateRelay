@@ -136,7 +136,7 @@ sequenceDiagram
   P->>O: 签名读取
   D->>D: 核对 SHA-256
   D->>R: FTPS 上传 pr-{jobRef 后 12 位}.gcode.3mf（面板显示传输进度）
-  D->>D: 确认打印机没在跑任务（空闲或停在打完 / 失败 / 已取消都行；准备中、打印中、暂停中回 rejected printer_busy，不发，Q239；runSeq 和 job.start 带的 expectedRunSeq 不一样，或传文件期间看不到打印机，回 rejected printer_used，不发，Q363）
+  D->>D: 确认打印机没在跑任务（空闲或停在打印完成 / 失败 / 已取消都行；准备中、打印中、暂停中回 rejected printer_busy，不发，Q239；runSeq 和 job.start 带的 expectedRunSeq 不一样，或传文件期间看不到打印机，回 rejected printer_used，不发，Q363）
   D->>R: 发开打指令（带映射）
   D-->>P: printer.event job.staged（R-CMD-04 的 CFG-CMD-05 从这里算）
   R-->>D: 状态：准备中 → 打印中
@@ -264,7 +264,7 @@ sequenceDiagram
   P->>P: 按 MSG-RECON-02 对账，只有三种结果（Q398）
   alt ① 同一个任务还在进行（打印机在跑这个 jobRef，或 pendingStarts 里有它）
     P->>P: 按快照推进任务阶段，去掉 OFFLINE；没有别的原因就回工作（S-PRN-T23）
-  else ② 有明确结局（daemon 结束记录；打印机停在这个任务的打完或失败；daemon 回过没开打）
+  else ② 有明确结局（daemon 结束记录；打印机停在这个任务的打印完成或失败；daemon 回过没开打）
     P->>P: 按事实结束任务（§4A.2），去掉 OFFLINE，进待清板。停在失败但从没见过开打的不算，走 ③（Q366）
   else ③ 有当前任务，其他一切
     P->>P: 挂 JUDGE，打印机留在异常（R-PRT-07）
@@ -301,7 +301,7 @@ sequenceDiagram
   D->>P: PUT /daemon/v1/end-photos/{jobRef}（MSG-HTTP-05），失败退避重试，收到 201 才删本机照片（Q319）
   P->>O: put end-photos/{jobId}.jpg，永久保留
   P->>P: 订单 待入库（S-ORD-T12），打印机 待清板（S-PRN-T21、INV-01）
-  P-->>S: 通知"打完待入库"
+  P-->>S: 通知"打印完成待入库"
   D->>R: 删掉下发的 3mf（MSG-JOBREF-03）
   opt 适配器支持延时摄影
     P->>D: command timelapse.collect
@@ -341,7 +341,7 @@ sequenceDiagram
   participant P as 面板
   actor A as 申请者
   Note over P: 订单 失败，打印机 待清板（SEQ-04 或 SEQ-06）
-  S->>P: reprintOrder（expectedStatus=FAILED，备注默认选手不可见）
+  S->>P: reprintOrder（expectedStatus=FAILED，备注默认申请者不可见）
   P->>P: 排队锁内：订单回排队中，用原排序值（S-ORD-T15、R-PRT-09）
   P->>P: 打印机松开这张单，仍是待清板（R-PRT-09）
   P-->>A: 通知"重打"
@@ -358,7 +358,7 @@ sequenceDiagram
 
 版本、文件、修改次数都不变（R-VER-11）。申请者没有重打按钮（F-PRT-07）。
 
-重打只用于打印机或现场一方的问题。选手模型本身的问题，现场人员改用 declineReprint（不重打，请选手重新提交，必须填原因，默认选手可见）：订单仍是失败，移出待办，申请者收到通知后自己提交新订单（R-PRT-18，Q224）。
+重打只用于打印机或现场一方的问题。申请者模型本身的问题，现场人员改用 declineReprint（不重打，请申请者重新提交，必须填原因，默认申请者可见）：订单仍是失败，移出待办，申请者收到通知后自己提交新订单（R-PRT-18，Q224）。
 
 ## SEQ-10 daemon 安装注册和连接认证
 

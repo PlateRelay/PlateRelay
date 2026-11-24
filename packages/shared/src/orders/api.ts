@@ -261,7 +261,7 @@ export interface PrinterView {
   error: PrinterError | null;
   maintenanceReason: string | null;
   starred: boolean;
-  /** 开放给选手: only open printers take queued orders and count in 本场可用资源. */
+  /** 开放给申请者: only open printers take queued orders and count in 本场可用资源. */
   openToContestants: boolean;
   /** Build plate on the printer, reported or set by hand; null when unknown. */
   bedType: string | null;

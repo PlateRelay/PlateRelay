@@ -346,7 +346,7 @@ export interface paths {
         };
         /**
          * 订单时间线记录
-         * @description 按时间正序。申请者只收到选手可见的备注。
+         * @description 按时间正序。申请者只收到申请者可见的备注。
          */
         get: operations["listOrderRecords"];
         put?: never;
@@ -503,7 +503,7 @@ export interface paths {
         put?: never;
         /**
          * 取消订单
-         * @description 只有待审核、排队中能取消。已派单返回 422 order_dispatched（请现场人员先停止）；打印中、失败、打完的单返回 422 order_started。
+         * @description 只有待审核、排队中能取消。已派单返回 422 order_dispatched（请现场人员先停止）；打印中、失败、打印完成的单返回 422 order_started。
          */
         post: operations["cancelOrder"];
         delete?: never;
@@ -542,8 +542,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 不重打，请选手重新提交
-         * @description 只用于选手模型本身的问题。订单仍是失败，记下不重打，重打按钮隐藏，移出现场人员待办，通知申请者并带原因。时间线记 reprint.declined，挂在打印节点下，原因默认选手可见。归档过或已经标过返回 409 state_conflict。
+         * 不重打，请申请者重新提交
+         * @description 只用于申请者模型本身的问题。订单仍是失败，记下不重打，重打按钮隐藏，移出现场人员待办，通知申请者并带原因。时间线记 reprint.declined，挂在打印节点下，原因默认申请者可见。归档过或已经标过返回 409 state_conflict。
          */
         post: operations["declineReprint"];
         /**
@@ -566,7 +566,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 人工裁定：失败、打完或没开打
+         * 人工裁定：失败、打印完成或没开打
          * @description 只在这个任务的打印机挂着 JUDGE 原因时可用（对账分不清任务结局，或开打指令可能没到），否则 409 state_conflict；放出异常打印机时的裁定走 releasePrinter。打印机上报这个任务正在运行时不能判，返回 409 state_conflict。裁定没开打（NOT_STARTED）：任务以 STOPPED_BEFORE_START 结束，订单回排队原位，打印机进待清板，面板给 daemon 发 job.stop 让它记下不再开打。
          */
         post: operations["reconcileOrder"];
@@ -587,7 +587,7 @@ export interface paths {
         put?: never;
         /**
          * 跳过零件
-         * @description 只在任务打印中或暂停中可用（准备中 409 state_conflict）；跳完至少剩一个没跳的零件，否则 422 skip_all_parts（全跳等于停止，申请者不能停止打印）。不能撤回，前端先二次确认。是控制命令，没有命令锁。已跳过列表以打印机上报为准写进打印任务的 skipped_parts；时间线打印节点记 parts.skipped，默认选手可见，现场人员只显示角色。
+         * @description 只在任务打印中或暂停中可用（准备中 409 state_conflict）；跳完至少剩一个没跳的零件，否则 422 skip_all_parts（全跳等于停止，申请者不能停止打印）。不能撤回，前端先二次确认。是控制命令，没有命令锁。已跳过列表以打印机上报为准写进打印任务的 skipped_parts；时间线打印节点记 parts.skipped，默认申请者可见，现场人员只显示角色。
          */
         post: operations["skipParts"];
         delete?: never;
@@ -802,7 +802,7 @@ export interface paths {
         put?: never;
         /**
          * 添加打印机
-         * @description 新加的默认不开放给选手。
+         * @description 新加的默认不开放给申请者。
          */
         post: operations["createPrinter"];
         delete?: never;
@@ -844,7 +844,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** 开放给选手 */
+        /** 开放给申请者 */
         put: operations["setPrinterOpen"];
         post?: never;
         delete?: never;
@@ -2138,7 +2138,7 @@ export interface components {
                 orderId: string | null;
                 orderNumber: number | null;
                 owner: components["schemas"]["Person"] | null;
-                /** @description x-requires: overview:filename:view（访客看「访客可看打印中的文件名」设置）。本系统派的任务 = 选手上传时的原文件名，不是打印机上的 pr-<jobRef 后 12 位> 文件名；external 为 true 时是打印机上报的文件名，只给 order:view:any */
+                /** @description x-requires: overview:filename:view（访客看「访客可看打印中的文件名」设置）。本系统派的任务 = 申请者上传时的原文件名，不是打印机上的 pr-<jobRef 后 12 位> 文件名；external 为 true 时是打印机上报的文件名，只给 order:view:any */
                 fileName?: string;
                 external: boolean;
                 percent: number | null;
@@ -2267,7 +2267,7 @@ export interface components {
                 pendingReview?: number;
                 /**
                  * Format: date-time
-                 * @description x-requires: settings:manage。数据恢复到的时间，有值时管理员看到横幅"数据已恢复到 <时间>，之后提交的订单需要选手重新提交"
+                 * @description x-requires: settings:manage。数据恢复到的时间，有值时管理员看到横幅"数据已恢复到 <时间>，之后提交的订单需要申请者重新提交"
                  */
                 restoredTo?: string | null;
             };
