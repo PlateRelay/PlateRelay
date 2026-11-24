@@ -230,7 +230,7 @@ daemon                                  面板
 
 - 有效期指"必须在这之前开始执行"。`job.start` 排队和下载文件的时间不算在内，进了下载队列就算开始执行（DAE-XFER-02，Q254）。
 - daemon 按 `welcome.serverTime` 算出和面板的时钟差，用面板的时间判断过期。收到时已经过期的，回 `expired`，不执行。这样断线很久之后，积压的旧"开打"不会突然被执行。
-- daemon 回 `expired` 是事实（它保证过期的命令永远不再执行）：`job.start` = 下发失败，订单回原位（R-DSP-08）；`job.stop` = 这次停止没执行，停止按钮照常可点（R-CMD-05）。
+- daemon 回 `expired` 是事实（它保证过期的命令永远不再执行）：`job.start` = 文件下发失败，订单回原位（R-DSP-08）；`job.stop` = 这次停止没执行，停止按钮照常可点（R-CMD-05）。
 - 面板自己算出过了 `expiresAt` 但没收到回复，**不算事实**：daemon 可能在过期前已经执行、只是回复还在它的发件箱里（MSG-ENV-03）。这时只把 `status` 记成 `EXPIRED` 方便排查，订单和打印机状态等打印机上报。
 
 **MSG-CMD-STATE**（R-CMD-01–08、Q215、Q243；替代已删除的 MSG-CMD-LOCK）：
@@ -247,11 +247,11 @@ daemon                                  面板
 - daemon 收到 `job.start`、进了下载队列就回 `accepted`。同时最多下载 2 个文件（固定值，DAE-XFER-01，Q388），不做本机缓存，每次派单都重新下载；文件放到打印机上、开打指令已发出后发 `job.staged`。
 - 下载（MSG-HTTP-02）和 FTPS 上传各自最多试 3 次，间隔 5 秒、15 秒、45 秒；每次尝试的超时是 CFG-CMD-02（默认 3 分钟，经 MSG-CFG 下发），从真正开始传起算，排队时间不算。每次重试覆盖上一次没传完的文件（它在 daemon 的清单里，INV-15），传完核对大小和 SHA-256，对不上也算一次失败。
 - 重试都在同一条 `job.start` 里，不产生新命令；**开打指令发出之后不再重试任何一步**。
-- 发开打指令之前，daemon 先确认打印机没在跑任务：空闲，或停在上一次的打完 / 失败 / 已取消（`IDLE` `FINISHED` `FAILED` `CANCELLED`）都可以发；只有准备中、打印中、暂停中（`PREPARING` `PRINTING` `PAUSED`）回 `rejected`（`code: printer_busy`）（Q239），什么都不发，按下发失败处理。`job.start` 带着面板派单时见到的 `expectedRunSeq`：发开打指令前 daemon 的 `runSeq` 已经不是这个值（派单后打印机跑过东西，哪怕现在停在打完），或传文件期间 daemon 有一段时间看不到打印机，同样什么都不发，回 `rejected`（`code: printer_used`），按下发失败处理，免得在没清的板子上开打（Q363）。面板结束任务时打印机状态跟最新上报走：在跑外部任务就进工作（外部），否则进待清板（S-PRN-T21），不回可用（Q317、Q370）；`printer_busy` 和 `printer_used` 不挂下发失败原因，其他传输失败挂 `SEND_FAILED`（Q400）。开打前不再另外向面板确认任务还在：压力测试里这一步和面板结束任务时发的 `job.stop` 都去掉也不出错，靠的是上面这条"打印机自派单以来没跑过别的任务"的检查，这条不能删（去掉后单个故障就能让系统任务打在没清板的板上）。`job.stop` 照常发。
+- 发开打指令之前，daemon 先确认打印机没在跑任务：空闲，或停在上一次的打完 / 失败 / 已取消（`IDLE` `FINISHED` `FAILED` `CANCELLED`）都可以发；只有准备中、打印中、暂停中（`PREPARING` `PRINTING` `PAUSED`）回 `rejected`（`code: printer_busy`）（Q239），什么都不发，按文件下发失败处理。`job.start` 带着面板派单时见到的 `expectedRunSeq`：发开打指令前 daemon 的 `runSeq` 已经不是这个值（派单后打印机跑过东西，哪怕现在停在打完），或传文件期间 daemon 有一段时间看不到打印机，同样什么都不发，回 `rejected`（`code: printer_used`），按文件下发失败处理，免得在没清的板子上开打（Q363）。面板结束任务时打印机状态跟最新上报走：在跑外部任务就进工作（外部），否则进待清板（S-PRN-T21），不回可用（Q317、Q370）；`printer_busy` 和 `printer_used` 不挂文件下发失败原因，其他传输失败挂 `SEND_FAILED`（Q400）。开打前不再另外向面板确认任务还在：压力测试里这一步和面板结束任务时发的 `job.stop` 都去掉也不出错，靠的是上面这条"打印机自派单以来没跑过别的任务"的检查，这条不能删（去掉后单个故障就能让系统任务打在没清板的板上）。`job.stop` 照常发。
 - 传文件期间（开打指令还没发）收到这个 `jobRef` 的 `job.stop`：daemon 中止下载或上传，删掉自己传了一半的文件（INV-15），把"这个 `jobRef` 不再发开打"和命令 ID 一样先写进硬盘（R-CMD-08），然后回 `job.cancelled { commandId, beforeStart: true }`。面板把任务结束为 `STOPPED_BEFORE_START`，订单回原位。开打指令只有 daemon 发，所以这里以 daemon 为准，不用等打印机（Q223）。
 - 开打指令已经发出（`job.staged`）之后收到这个 `jobRef` 的 `job.stop`，而打印机没有在跑它：如果从文件放上打印机起 daemon 一直连着这台打印机，而且 `runSeq` 没变（打印机什么都没跑过），daemon 删掉自己放上去的文件（迟到的开打指令也就打不起来），把"这个 `jobRef` 不再发开打"写进硬盘，回 `job.cancelled { commandId, beforeStart: true }`，同一个 `jobRef` 只回一次。中途断过视线或 `runSeq` 变了的，daemon 不下结论，由打印机上报或人判（R-CMD-04、R-PRT-08，Q361）。**带 `jobRef` 的停止，只有打印机当前正在跑这个 `jobRef` 时才发给打印机**；否则只把"这个 `jobRef` 不再发开打"写进硬盘，什么都不发给打印机。拓竹的停止不分任务，发了会停掉正在跑的外部任务（Q425）。面板人判没开打时发的 `job.stop`（R-PRT-08）也按这一条记下不再开打。
-- daemon 在发开打指令之前先落盘"发起打印"（DAE-JOB-02）。传文件期间 daemon 重启：没落过"发起打印"的，重启后删掉半截文件、写下不再开打，回 `failed`（`code: daemon_restarted`），按下发失败处理；落过的不重发，等打印机上报或对账（DAE-JOB-03，Q422）。
-- 重试用完回 `failed`，按下发失败处理（R-DSP-08）。每次尝试记在 `command.result.data.attempts`：`[{ step: "download" | "upload", error, at }]`。进度用 `command.result.data.step`：`queued` → `download` → `upload`，前端据此显示"排队中"。
+- daemon 在发开打指令之前先落盘"发起打印"（DAE-JOB-02）。传文件期间 daemon 重启：没落过"发起打印"的，重启后删掉半截文件、写下不再开打，回 `failed`（`code: daemon_restarted`），按文件下发失败处理；落过的不重发，等打印机上报或对账（DAE-JOB-03，Q422）。
+- 重试用完回 `failed`，按文件下发失败处理（R-DSP-08）。每次尝试记在 `command.result.data.attempts`：`[{ step: "download" | "upload", error, at }]`。进度用 `command.result.data.step`：`queued` → `download` → `upload`，前端据此显示"排队中"。
 
 **MSG-CMD-WL**（INV-14）：daemon 只执行上表里的命令类型，`control` 只执行适配器静态清单里的动作。别的一律 `rejected`。
 
